@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -35,6 +36,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+// For JEditorPane HTML browser
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 
 @SuppressWarnings("ExtractMethodRecommender")
 public class Ollama4jUI {
@@ -221,19 +226,15 @@ public class Ollama4jUI {
                         String botLabel = "AI: ";
                         CustomStreamHandler streamHandlerCustom = new CustomStreamHandler(chatHistory, responseBuffer,
                                 botLabel);
-                        // OllamaGenerateTokenHandler streamHandler = chunk -> SwingUtilities
-                        // .invokeLater(() -> {
-                        // OllamaChatResponseModel responseModel = new OllamaChatResponseModel();
-                        // responseModel.setMessage(new
-                        // OllamaChatMessage(OllamaChatMessageRole.ASSISTANT, chunk));
-                        // streamHandlerCustom.accept(responseModel);
-                        // });
                         if (useTools) {
-                            history = ollamaChat.chat(message, history, ollamaAPI, selectedModel,
-                                    new OllamaChatTokenHandler() {
+                            history = ollamaChat.chatWithTools(message, history, ollamaAPI, selectedModel,
+                                    new OllamaGenerateTokenHandler() {
                                         @Override
-                                        public void accept(OllamaChatResponseModel message) {
-                                            streamHandlerCustom.accept(message);
+                                        public void accept(String chunk) {
+                                            SwingUtilities.invokeLater(() -> {
+                                                chatHistory.append(chunk);
+                                                chatHistory.setCaretPosition(chatHistory.getDocument().getLength());
+                                            });
                                         }
                                     });
                         } else {
@@ -343,6 +344,73 @@ public class Ollama4jUI {
         return modelsPanel;
     }
 
+    // New panel for ollama.com web browser
+    private static JPanel getOllamaComPanel() {
+        JPanel webPanel = new JPanel(new BorderLayout());
+		final String homeUrl = "https://ollama.com/search";
+		final JEditorPane editorPane = createOllamaEditorPane();
+        editorPane.addHyperlinkListener(new HyperlinkListener() {
+            @Override
+            public void hyperlinkUpdate(HyperlinkEvent e) {
+                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    try {
+                        editorPane.setPage(e.getURL());
+                    } catch (IOException ex) {
+                        editorPane.setText("Could not load page: " + ex.getMessage());
+                    }
+                }
+            }
+        });
+        JScrollPane scrollPane = new JScrollPane(editorPane);
+		webPanel.add(scrollPane, BorderLayout.CENTER);
+
+		JPanel topBar = new JPanel(new BorderLayout());
+		JPanel buttonsPanel = new JPanel();
+		JButton openInBrowserButton = new JButton("Open in Browser");
+		openInBrowserButton.addActionListener(e -> {
+			try {
+				if (Desktop.isDesktopSupported()) {
+					Desktop.getDesktop().browse(URI.create(homeUrl));
+				}
+			} catch (Exception ex) {
+				logger.error("Failed to open browser: {}", ex.getMessage());
+			}
+		});
+		JButton reloadButton = new JButton("Reload");
+		reloadButton.addActionListener(e -> {
+			try {
+				URL current = editorPane.getPage();
+				if (current == null) {
+					editorPane.setPage(homeUrl);
+				} else {
+					editorPane.setPage(current);
+				}
+			} catch (IOException ex) {
+				editorPane.setText("Could not load page: " + ex.getMessage());
+			}
+		});
+		buttonsPanel.add(reloadButton);
+		buttonsPanel.add(openInBrowserButton);
+		JLabel notice = new JLabel("Ollama Model Library");
+		topBar.add(notice, BorderLayout.WEST);
+		topBar.add(buttonsPanel, BorderLayout.EAST);
+		webPanel.add(topBar, BorderLayout.NORTH);
+        return webPanel;
+    }
+
+	private static JEditorPane createOllamaEditorPane() {
+		try {
+			JEditorPane pane = new JEditorPane("https://ollama.com/search");
+			pane.setEditable(false);
+			pane.setContentType("text/html");
+			return pane;
+		} catch (IOException e) {
+			JEditorPane pane = new JEditorPane("text/plain", "Could not load https://ollama.com/search\n" + e.getMessage());
+			pane.setEditable(false);
+			return pane;
+		}
+	}
+
     // private static JPanel getDownloadableModelsPanel() {
     // JPanel downloadableModelsPanel = new JPanel(new BorderLayout());
     // String[] columnNames = { "Model", "Description", "Pull Count", "Last Updated"
@@ -367,7 +435,7 @@ public class Ollama4jUI {
 
     private static void createAndShowGUI() {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 400);
+        frame.setSize(800, 600);
         frame.setLayout(new BorderLayout());
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
@@ -375,6 +443,7 @@ public class Ollama4jUI {
         listModel.addElement("Models");
         // listModel.addElement("Model Library");
         listModel.addElement("Settings");
+        listModel.addElement("Models From Ollama Library");
 
         JList<String> list = new JList<>(listModel);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -389,12 +458,14 @@ public class Ollama4jUI {
         JPanel chatPanel = getChatPanel();
         JPanel modelsPanel = getModelsPanel();
         JPanel settingsPanel = getSettingsPanel();
+        JPanel ollamaComPanel = getOllamaComPanel();
         // JPanel downloadableModelsPanel = getDownloadableModelsPanel();
 
         rightPanel.add(chatPanel, "Chat");
         rightPanel.add(modelsPanel, "Models");
         // rightPanel.add(downloadableModelsPanel, "Model Library");
         rightPanel.add(settingsPanel, "Settings");
+        rightPanel.add(ollamaComPanel, "Models From Ollama Library");
 
         list.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -432,8 +503,6 @@ public class Ollama4jUI {
 
         @Override
         public void accept(OllamaChatResponseModel message) {
-            // String substr = message.substring(responseBuffer.length() -
-            // botLabel.length());
             responseBuffer.append(message.getMessage().getResponse());
             chatHistory.setText(chatHistory.getText() + message.getMessage().getResponse());
             chatHistory.setCaretPosition(chatHistory.getDocument().getLength());
@@ -498,8 +567,11 @@ public class Ollama4jUI {
                                 .build())
                 .toolFunction(
                         arguments -> {
-                            String location = arguments.get("city").toString();
-                            return "Currently " + location + "'s weather is beautiful.";
+                            String city = arguments.get("city").toString();
+                            // Use WeatherToolFunction to get real weather data
+                            WeatherToolFunction weatherTool = new WeatherToolFunction(openWeatherMapApiKey);
+                            Object result = weatherTool.apply(Map.of("cityName", city));
+                            return result;
                         })
                 .build();
     }

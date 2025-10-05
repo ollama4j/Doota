@@ -11,3 +11,6 @@ build:
 
 full-build:
 	mvn -B clean install package
+
+start: build
+	java -jar target/ollama4j-ui-*.jar
