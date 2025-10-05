@@ -8,15 +8,15 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-import io.github.ollama4j.exceptions.OllamaBaseException;
-import io.github.ollama4j.exceptions.ToolInvocationException;
+import io.github.ollama4j.exceptions.OllamaException;
 import io.github.ollama4j.models.chat.*;
-import io.github.ollama4j.models.generate.OllamaStreamHandler;
+import io.github.ollama4j.models.generate.OllamaGenerateRequest;
+import io.github.ollama4j.models.generate.OllamaGenerateStreamObserver;
+import io.github.ollama4j.models.generate.OllamaGenerateTokenHandler;
 import io.github.ollama4j.models.response.Model;
-import io.github.ollama4j.tools.OllamaToolsResult;
+import io.github.ollama4j.models.response.OllamaResult;
 import io.github.ollama4j.tools.ToolFunction;
 import io.github.ollama4j.tools.Tools;
-import io.github.ollama4j.utils.OptionsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,9 +31,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +38,7 @@ import java.util.Properties;
 
 @SuppressWarnings("ExtractMethodRecommender")
 public class Ollama4jUI {
-    private static final Logger logger = LoggerFactory.getLogger(OllamaAPI.class);
+    private static final Logger logger = LoggerFactory.getLogger(Ollama.class);
 
     private static final String appTitle = "Ollama4j UI";
     private static String ollamaHost = "http://localhost:11434";
@@ -49,7 +46,7 @@ public class Ollama4jUI {
     private static boolean isChatInProgress = false;
     private static String selectedModel = null;
     private static boolean useTools = true;
-    private static OllamaAPI ollamaAPI;
+    private static Ollama ollamaAPI;
     private static String cacheDirectory = System.getProperty("user.home") + File.separator + "ollama4j-ui";
     private static String settingsFilePath = cacheDirectory + File.separator + "ollama4j-ui.properties";
     private static final String defaultFileNameForChatExport = cacheDirectory + File.separator + "ollama4j-chat.txt";
@@ -57,6 +54,7 @@ public class Ollama4jUI {
     private static String temperature = "0.75";
     private static String maxTokens = "2048";
     private static String openWeatherMapApiKey = "";
+
     public static void main(String[] args) throws IOException {
         File cacheDir = new File(cacheDirectory);
         if (!cacheDir.exists()) {
@@ -81,7 +79,7 @@ public class Ollama4jUI {
             openWeatherMapApiKey = properties.getProperty("openWeatherMapApiKey");
         }
         // write default settings to file
-        ollamaAPI = new OllamaAPI(ollamaHost);
+        ollamaAPI = new Ollama(ollamaHost);
         ollamaAPI.setRequestTimeoutSeconds(60);
         SwingUtilities.invokeLater(Ollama4jUI::createAndShowGUI);
     }
@@ -117,7 +115,7 @@ public class Ollama4jUI {
         try {
             ollamaAPI.listModels().stream().map(Model::getName).forEach(model::addElement);
             modelsList = ollamaAPI.listModels().stream().map(Model::getName).toArray(String[]::new);
-        } catch (OllamaBaseException | IOException | URISyntaxException | InterruptedException e) {
+        } catch (OllamaException e) {
             modelsList = new String[] { "No Models Available" };
             logger.error("Error fetching models: {}", e.getMessage());
             model.addElement("No Models Available");
@@ -223,18 +221,32 @@ public class Ollama4jUI {
                         String botLabel = "AI: ";
                         CustomStreamHandler streamHandlerCustom = new CustomStreamHandler(chatHistory, responseBuffer,
                                 botLabel);
-                        OllamaStreamHandler streamHandler = chunk -> SwingUtilities
-                                .invokeLater(() -> streamHandlerCustom.accept(chunk));
+                        // OllamaGenerateTokenHandler streamHandler = chunk -> SwingUtilities
+                        // .invokeLater(() -> {
+                        // OllamaChatResponseModel responseModel = new OllamaChatResponseModel();
+                        // responseModel.setMessage(new
+                        // OllamaChatMessage(OllamaChatMessageRole.ASSISTANT, chunk));
+                        // streamHandlerCustom.accept(responseModel);
+                        // });
                         if (useTools) {
-                            history = ollamaChat.chatWithTools(message, history, ollamaAPI, selectedModel,
-                                    streamHandler);
+                            history = ollamaChat.chat(message, history, ollamaAPI, selectedModel,
+                                    new OllamaChatTokenHandler() {
+                                        @Override
+                                        public void accept(OllamaChatResponseModel message) {
+                                            streamHandlerCustom.accept(message);
+                                        }
+                                    });
                         } else {
-                            history = ollamaChat.chat(message, history, ollamaAPI, selectedModel, streamHandler);
+                            history = ollamaChat.chat(message, history, ollamaAPI, selectedModel,
+                                    new OllamaChatTokenHandler() {
+                                        @Override
+                                        public void accept(OllamaChatResponseModel message) {
+                                            streamHandlerCustom.accept(message);
+                                        }
+                                    });
                         }
-                    } catch (OllamaBaseException | IOException | InterruptedException ex) {
+                    } catch (OllamaException ex) {
                         SwingUtilities.invokeLater(() -> chatHistory.append("\n[Error] " + ex.getMessage() + "\n"));
-                    } catch (ToolInvocationException ex) {
-                        throw new RuntimeException(ex);
                     } finally {
                         SwingUtilities.invokeLater(() -> {
                             sendButton.setText("➤");
@@ -331,25 +343,27 @@ public class Ollama4jUI {
         return modelsPanel;
     }
 
-    private static JPanel getDownloadableModelsPanel() {
-        JPanel downloadableModelsPanel = new JPanel(new BorderLayout());
-        String[] columnNames = { "Model", "Description", "Pull Count", "Last Updated" };
-        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
-        JTable table = new JTable(tableModel);
+    // private static JPanel getDownloadableModelsPanel() {
+    // JPanel downloadableModelsPanel = new JPanel(new BorderLayout());
+    // String[] columnNames = { "Model", "Description", "Pull Count", "Last Updated"
+    // };
+    // DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+    // JTable table = new JTable(tableModel);
 
-        try {
-            ollamaAPI.listModelsFromLibrary().forEach(model -> {
-                tableModel.addRow(new Object[] { model.getName(), model.getDescription(), model.getPullCount(),
-                        model.getLastUpdated() });
-            });
-        } catch (Exception e) {
-            logger.error("Error: {}", e.getMessage());
-        }
-        table.setDefaultEditor(Object.class, null);
-        downloadableModelsPanel.add(new JLabel("Model Library"), BorderLayout.NORTH);
-        downloadableModelsPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-        return downloadableModelsPanel;
-    }
+    // try {
+    // ollamaAPI.listModelsFromLibrary().forEach(model -> {
+    // tableModel.addRow(new Object[] { model.getName(), model.getDescription(),
+    // model.getPullCount(),
+    // model.getLastUpdated() });
+    // });
+    // } catch (Exception e) {
+    // logger.error("Error: {}", e.getMessage());
+    // }
+    // table.setDefaultEditor(Object.class, null);
+    // downloadableModelsPanel.add(new JLabel("Model Library"), BorderLayout.NORTH);
+    // downloadableModelsPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+    // return downloadableModelsPanel;
+    // }
 
     private static void createAndShowGUI() {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -359,7 +373,7 @@ public class Ollama4jUI {
         DefaultListModel<String> listModel = new DefaultListModel<>();
         listModel.addElement("Chat");
         listModel.addElement("Models");
-        listModel.addElement("Model Library");
+        // listModel.addElement("Model Library");
         listModel.addElement("Settings");
 
         JList<String> list = new JList<>(listModel);
@@ -375,11 +389,11 @@ public class Ollama4jUI {
         JPanel chatPanel = getChatPanel();
         JPanel modelsPanel = getModelsPanel();
         JPanel settingsPanel = getSettingsPanel();
-        JPanel downloadableModelsPanel = getDownloadableModelsPanel();
+        // JPanel downloadableModelsPanel = getDownloadableModelsPanel();
 
         rightPanel.add(chatPanel, "Chat");
         rightPanel.add(modelsPanel, "Models");
-        rightPanel.add(downloadableModelsPanel, "Model Library");
+        // rightPanel.add(downloadableModelsPanel, "Model Library");
         rightPanel.add(settingsPanel, "Settings");
 
         list.addListSelectionListener(e -> {
@@ -403,7 +417,7 @@ public class Ollama4jUI {
         return String.format("%.2f %s", bytes / Math.pow(unit, exp), sizes[exp - 1]);
     }
 
-    static class CustomStreamHandler implements OllamaStreamHandler {
+    static class CustomStreamHandler implements OllamaChatTokenHandler {
         private final JTextArea chatHistory;
         private final StringBuilder responseBuffer;
         private final String botLabel;
@@ -417,76 +431,76 @@ public class Ollama4jUI {
         }
 
         @Override
-        public void accept(String message) {
-            String substr = message.substring(responseBuffer.length() - botLabel.length());
-            responseBuffer.append(substr);
-            chatHistory.setText(chatHistory.getText() + substr);
+        public void accept(OllamaChatResponseModel message) {
+            // String substr = message.substring(responseBuffer.length() -
+            // botLabel.length());
+            responseBuffer.append(message.getMessage().getResponse());
+            chatHistory.setText(chatHistory.getText() + message.getMessage().getResponse());
             chatHistory.setCaretPosition(chatHistory.getDocument().getLength());
         }
     }
 
     static class OllamaStreamingChat {
-        public List<OllamaChatMessage> chat(String message, List<OllamaChatMessage> history, OllamaAPI ollamaAPI,
-                String model, OllamaStreamHandler streamHandler)
-                throws OllamaBaseException, IOException, InterruptedException {
-            OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(model).withMessages(history);
+        public List<OllamaChatMessage> chat(String message, List<OllamaChatMessage> history, Ollama ollamaAPI,
+                String model, OllamaChatTokenHandler streamHandler)
+                throws OllamaException {
+            OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.builder().withModel(model)
+                    .withMessages(history);
             OllamaChatRequest requestModel = builder.withMessage(OllamaChatMessageRole.USER, message)
                     .build();
+            requestModel.setUseTools(false);
             OllamaChatResult chatResult = ollamaAPI.chat(requestModel, streamHandler);
             return chatResult.getChatHistory();
         }
 
         public List<OllamaChatMessage> chatWithTools(String message, List<OllamaChatMessage> history,
-                OllamaAPI ollamaAPI,
-                String model, OllamaStreamHandler streamHandler)
-                throws OllamaBaseException, IOException, InterruptedException, ToolInvocationException {
-            Tools.ToolSpecification weatherToolSpec = getWeatherToolSpec(openWeatherMapApiKey);
+                Ollama ollamaAPI,
+                String model, OllamaGenerateTokenHandler streamHandler)
+                throws OllamaException {
+            Tools.Tool weatherToolSpec = getWeatherToolSpec(openWeatherMapApiKey);
             ollamaAPI.registerTool(weatherToolSpec);
-            for (OllamaToolsResult.ToolResult r : ollamaAPI.generateWithTools(model, new Tools.PromptBuilder()
-                    .withToolSpecification(weatherToolSpec)
-                    .withPrompt(message + "\n\nMake sure you respond ONLY in a valid JSON format.")
-                    .build(), new OptionsBuilder().build()).getToolResults()) {
-                String systemResponse = (String) r.getResult();
-                OllamaChatMessage userMessage = new OllamaChatMessage(OllamaChatMessageRole.USER, message);
-                OllamaChatMessage systemMessage = new OllamaChatMessage(OllamaChatMessageRole.SYSTEM, systemResponse);
-                history.add(userMessage);
-                history.add(systemMessage);
-                streamHandler.accept(systemResponse);
-            }
+
+            OllamaGenerateRequest requestModel = new OllamaGenerateRequest();
+            requestModel.setModel(model);
+            requestModel.setPrompt(message);
+            requestModel.setUseTools(true);
+            OllamaResult r = ollamaAPI
+                    .generate(requestModel, new OllamaGenerateStreamObserver(streamHandler, streamHandler));
+            String systemResponse = (String) r.getResponse();
+            OllamaChatMessage userMessage = new OllamaChatMessage(OllamaChatMessageRole.USER, message);
+            OllamaChatMessage systemMessage = new OllamaChatMessage(OllamaChatMessageRole.SYSTEM, systemResponse);
+            history.add(userMessage);
+            history.add(systemMessage);
+            streamHandler.accept(systemResponse);
             return history;
         }
     }
 
-    public static Tools.ToolSpecification getWeatherToolSpec(String openWeatherMapApiKey) {
-        return Tools.ToolSpecification.builder()
-                .functionName("weather-reporter")
-                .functionDescription(
-                        "You are a tool who simply finds the city name from the user's message input/query about weather.")
-                .toolFunction(new WeatherToolFunction(openWeatherMapApiKey))
-                .toolPrompt(
-                        Tools.PromptFuncDefinition.builder()
-                                .type("prompt")
-                                .function(
-                                        Tools.PromptFuncDefinition.PromptFuncSpec.builder()
-                                                .name("get-city-name")
-                                                .description("Get the city name")
-                                                .parameters(
-                                                        Tools.PromptFuncDefinition.Parameters.builder()
-                                                                .type("object")
-                                                                .properties(
-                                                                        Map.of(
-                                                                                "cityName",
-                                                                                Tools.PromptFuncDefinition.Property
-                                                                                        .builder()
-                                                                                        .type("string")
-                                                                                        .description(
-                                                                                                "The name of the city. e.g. Bengaluru")
-                                                                                        .required(true)
-                                                                                        .build()))
-                                                                .required(java.util.List.of("cityName"))
-                                                                .build())
-                                                .build())
+    public static Tools.Tool getWeatherToolSpec(String openWeatherMapApiKey) {
+        return Tools.Tool.builder()
+                .toolSpec(
+                        Tools.ToolSpec.builder()
+                                .name("weather-reporter")
+                                .description("Gets the weather for a given city")
+                                .parameters(
+                                        Tools.Parameters.of(
+                                                Map.of(
+                                                        "city",
+                                                        Tools.Property.builder()
+                                                                .type("string")
+                                                                .description(
+                                                                        "The city to get"
+                                                                                + " the weather"
+                                                                                + " details"
+                                                                                + " for.")
+                                                                .required(true)
+                                                                .build())))
                                 .build())
+                .toolFunction(
+                        arguments -> {
+                            String location = arguments.get("city").toString();
+                            return "Currently " + location + "'s weather is beautiful.";
+                        })
                 .build();
     }
 }
