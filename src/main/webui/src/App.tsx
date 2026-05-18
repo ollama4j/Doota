@@ -57,11 +57,11 @@ function ToolCallAccordionCard({ tc }: ToolCallAccordionCardProps) {
     statusClass = 'running';
   } else if (status === 'success') {
     statusIcon = '✅';
-    statusText = `tool: ${toolName} execution complete`;
+    statusText = `Tool: ${toolName} execution complete`;
     statusClass = 'success';
   } else if (status === 'error') {
     statusIcon = '❌';
-    statusText = `tool: ${toolName} failed`;
+    statusText = `Tool: ${toolName} failed`;
     statusClass = 'error';
   }
 
@@ -480,7 +480,7 @@ function App() {
     try {
       for (let iteration = 0; iteration < MAX_AGENT_ITERATIONS; iteration++) {
         setAgentIteration(iteration + 1);
-        setAgentStatus(`Iteration ${iteration + 1} — calling LLM…`);
+        setAgentStatus(`Iteration ${iteration + 1} — asking the model...`);
 
         // Build message list for the API (exclude the trailing empty assistant bubble)
         const historyForApi = workingMessages
