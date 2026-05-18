@@ -1035,5 +1035,107 @@ body {
   line-height: 1;
 }
 
+/* Tool Settings Styling */
+.tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
 
+.tool-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
+.tool-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.tool-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  margin-right: 20px;
+}
+
+.tool-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ececf1;
+}
+
+.tool-status-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.tool-status-badge.enabled {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.tool-status-badge.disabled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.tool-description {
+  font-size: 0.88rem;
+  color: #8e8ea0;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.toggle-tool-button {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  min-width: 90px;
+}
+
+.toggle-tool-button.enabled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.toggle-tool-button.enabled:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.toggle-tool-button.disabled {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.toggle-tool-button.disabled:hover {
+  background: #10b981;
+  color: #ffffff;
+}

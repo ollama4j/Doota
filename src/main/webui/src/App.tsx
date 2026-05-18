@@ -18,8 +18,16 @@ interface Conversation {
   model: string;
 }
 
+interface ToolInfoDTO {
+  name: string;
+  displayName: string;
+  description: string;
+  enabled: boolean;
+}
+
 function App() {
   const [models, setModels] = useState<string[]>([]);
+  const [tools, setTools] = useState<ToolInfoDTO[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem('ollama4j_conversations');
@@ -59,6 +67,28 @@ function App() {
 
   const currentConversation = conversations.find(c => c.id === currentConversationId);
   const messages = currentConversation ? currentConversation.messages : [];
+
+  const fetchTools = () => {
+    fetch('/api/settings/tools')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch tools");
+        return res.json();
+      })
+      .then(data => setTools(data))
+      .catch(err => console.error("Error fetching tools", err));
+  };
+
+  const toggleTool = (toolName: string) => {
+    fetch(`/api/settings/tools/${encodeURIComponent(toolName)}/toggle`, {
+      method: 'POST'
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to toggle tool");
+        return res.json();
+      })
+      .then(data => setTools(data))
+      .catch(err => console.error("Error toggling tool", err));
+  };
 
   const checkHostReachability = () => {
     fetch('/api/settings/ping')
@@ -145,6 +175,7 @@ function App() {
       fetchModels();
       fetchLoadedModels();
       checkHostReachability();
+      fetchTools();
     } else if (currentPath.startsWith('/chat/')) {
       const uuid = currentPath.substring(6);
       const existing = conversations.find(c => c.id === uuid);
@@ -505,6 +536,38 @@ function App() {
                   placeholder="http://localhost:11434"
                 />
                 <button className="save-button" onClick={saveSettings}>Save</button>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label>AI Assistant Tools</label>
+              <div style={{ color: '#8e8ea0', fontSize: '0.85rem', marginBottom: '15px', lineHeight: '1.4' }}>
+                Enable or disable capabilities that the AI assistant can call to perform system actions on your computer.
+              </div>
+              <div className="tools-list">
+                {tools.length === 0 ? (
+                  <div style={{ color: '#8e8ea0', padding: '10px' }}>No tools registered.</div>
+                ) : (
+                  tools.map(t => (
+                    <div className="tool-item" key={t.name}>
+                      <div className="tool-info-container">
+                        <div className="tool-name-row">
+                          <span className="tool-name">{t.displayName}</span>
+                          <span className={`tool-status-badge ${t.enabled ? 'enabled' : 'disabled'}`}>
+                            {t.enabled ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <p className="tool-description">{t.description}</p>
+                      </div>
+                      <button 
+                        className={`toggle-tool-button ${t.enabled ? 'enabled' : 'disabled'}`}
+                        onClick={() => toggleTool(t.name)}
+                      >
+                        {t.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

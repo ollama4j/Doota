@@ -4,6 +4,7 @@ import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
 import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
 import io.github.ollama4j.models.response.Model;
+import io.github.ollama4j.tools.Tools;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -124,6 +125,23 @@ public class OllamaResource {
         }
     }
 
+    @GET
+    @Path("/settings/tools")
+    public List<ToolInfo> getTools() {
+        return ollamaService.getToolsList();
+    }
+
+    @POST
+    @Path("/settings/tools/{name}/toggle")
+    public List<ToolInfo> toggleTool(@PathParam("name") String name) {
+        ollamaService.setToolEnabled(name, !ollamaService.getToolsList().stream()
+                .filter(t -> t.getName().equals(name))
+                .findFirst()
+                .map(ToolInfo::isEnabled)
+                .orElse(false));
+        return ollamaService.getToolsList();
+    }
+
     @POST
     @Path("/chat/stream")
     @Produces(MediaType.TEXT_PLAIN)
@@ -136,8 +154,16 @@ public class OllamaResource {
                             .withMessage(OllamaChatMessageRole.USER, req.message)
                             .build();
 
+                    List<Tools.Tool> enabledTools = ollamaService.getEnabledTools();
+                    if (!enabledTools.isEmpty()) {
+                        requestModel.setTools(enabledTools);
+                        // useTools=false → SDK auto-executes tools and loops internally
+                        // useTools=true  → client-managed (we'd have to invoke tools manually)
+                        requestModel.setUseTools(false);
+                    }
+
                     ollamaService.getClient().chat(requestModel, message -> {
-                        String response = message.getMessage().getResponse(); 
+                        String response = message.getMessage().getResponse();
                         if (response != null) {
                             emitter.emit(response);
                         }
