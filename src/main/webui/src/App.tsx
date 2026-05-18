@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Copy, Check } from 'lucide-react';
 import './App.css';
+
+const MAX_AGENT_ITERATIONS = 10;
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'tool';
@@ -33,6 +35,79 @@ interface OllamaModel {
   size?: number;
 }
 
+interface ToolCallAccordionCardProps {
+  tc: any;
+}
+
+function ToolCallAccordionCard({ tc }: ToolCallAccordionCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const toolName = tc.function?.name ?? tc.name ?? 'unknown';
+  const toolArgs = tc.function?.arguments ?? tc.arguments ?? {};
+  const status = tc.status ?? 'pending';
+  const result = tc.result;
+
+  let statusIcon = '⏳';
+  let statusText = `invoking tool: ${toolName}`;
+  let statusClass = 'pending';
+
+  if (status === 'running') {
+    statusIcon = '⚙️';
+    statusText = `invoking tool: ${toolName}`;
+    statusClass = 'running';
+  } else if (status === 'success') {
+    statusIcon = '✅';
+    statusText = `tool: ${toolName} execution complete`;
+    statusClass = 'success';
+  } else if (status === 'error') {
+    statusIcon = '❌';
+    statusText = `tool: ${toolName} failed`;
+    statusClass = 'error';
+  }
+
+  return (
+    <div className={`tool-call-accordion-card ${statusClass}`}>
+      <div 
+        className="tool-call-accordion-header" 
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span className={`tool-call-accordion-icon ${statusClass === 'running' ? 'spin' : ''}`}>
+          {statusIcon}
+        </span>
+        <span className="tool-call-accordion-title">{statusText}</span>
+        <span className="tool-call-accordion-arrow">{isExpanded ? '▲' : '▼'}</span>
+      </div>
+      
+      {isExpanded && (
+        <div className="tool-call-accordion-body">
+          <div className="tool-call-section">
+            <div className="tool-call-section-title">Parameters</div>
+            <pre className="tool-call-code">{JSON.stringify(toolArgs, null, 2)}</pre>
+          </div>
+          
+          {(status === 'running' || status === 'pending') && (
+            <div className="tool-call-section">
+              <div className="tool-call-section-title">Response</div>
+              <div className="tool-call-loading">
+                <span className="tool-call-loading-dot">.</span>
+                <span className="tool-call-loading-dot">.</span>
+                <span className="tool-call-loading-dot">.</span>
+              </div>
+            </div>
+          )}
+          
+          {result && (
+            <div className="tool-call-section">
+              <div className="tool-call-section-title">Response</div>
+              <pre className="tool-call-code">{result}</pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [models, setModels] = useState<string[]>([]);
   const [tools, setTools] = useState<ToolInfoDTO[]>([]);
@@ -45,6 +120,8 @@ function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [agentStatus, setAgentStatus] = useState<string>('');
+  const [agentIteration, setAgentIteration] = useState(0);
   const [hostUrl, setHostUrl] = useState('');
   const [settingsModels, setSettingsModels] = useState<OllamaModel[]>([]);
   const [loadedModels, setLoadedModels] = useState<string[]>([]);
@@ -373,163 +450,242 @@ function App() {
       abortControllerRef.current = null;
     }
     setIsLoading(false);
+    setAgentStatus('');
+    setAgentIteration(0);
   };
 
-  const triggerAssistantResponse = async (history: ChatMessage[]) => {
+  // ─── UI-side agentic loop ────────────────────────────────────────────────
+  // All LLM calls, tool detection, and tool execution happen here in the
+  // browser. The server only streams LLM tokens and executes individual tools.
+
+  const runAgentLoop = useCallback(async (
+    initialHistory: ChatMessage[],
+    conversationId: string,
+    model: string
+  ) => {
     setIsLoading(true);
+    setAgentIteration(0);
+    setAgentStatus('Thinking…');
+
+    // Working copy of messages we mutate across iterations.
+    // The last element is always the current (streaming) assistant bubble.
+    let workingMessages = [...initialHistory];
+
+    const updateConv = (msgs: ChatMessage[]) => {
+      setConversations(prev => prev.map(c =>
+        c.id === conversationId ? { ...c, messages: msgs } : c
+      ));
+    };
 
     try {
-      // Map history to the format expected by AgentChatRequest
-      // We exclude the last empty assistant message from history, and the last user message becomes the prompt
-      const previousMessages = history.slice(0, -2).map(m => ({
-        role: m.role,
-        content: m.content
-      }));
-      const promptMessage = history[history.length - 2];
+      for (let iteration = 0; iteration < MAX_AGENT_ITERATIONS; iteration++) {
+        setAgentIteration(iteration + 1);
+        setAgentStatus(`Iteration ${iteration + 1} — calling LLM…`);
 
-      const response = await fetch('/api/agent/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: selectedModel,
-          prompt: promptMessage ? promptMessage.content : "",
-          history: previousMessages
-        })
-      });
+        // Build message list for the API (exclude the trailing empty assistant bubble)
+        const historyForApi = workingMessages
+          .slice(0, -1)  // drop the placeholder assistant message
+          .map(m => ({ role: m.role, content: m.content }));
 
-      if (!response.ok) {
-        throw new Error('Server returned ' + response.status);
-      }
-
-      const memory = await response.json();
-      
-      // memory.messages contains the full history, including tool calls, tool results, and the final response.
-      // We can map it back to our ChatMessage format
-      if (memory && memory.messages) {
-        const newHistory = memory.messages
-           .filter((m: any) => m.role !== 'SYSTEM') // hide system prompt
-           .map((m: any) => {
-               const chatMsg: ChatMessage = {
-                 role: m.role.toLowerCase(),
-                 content: m.content || ''
-               };
-               if (m.toolCalls && m.toolCalls.length > 0) {
-                 chatMsg.tool_calls = m.toolCalls.map((tc: any) => ({
-                   function: {
-                     name: tc.tool,
-                     arguments: tc.arguments
-                   }
-                 }));
-               }
-               if (m.role === 'TOOL') {
-                  chatMsg.content = m.toolResult || '';
-               }
-               return chatMsg;
-           });
-
-        setConversations(prev => prev.map(c => {
-          if (c.id === currentConversationId) {
-            return { ...c, messages: newHistory };
-          }
-          return c;
-        }));
-      }
-
-    } catch (error) {
-      console.error("Chat error:", error);
-      setConversations(prev => prev.map(c => {
-        if (c.id === currentConversationId) {
-          const updated = [...c.messages];
-          if (updated.length > 0) {
-            updated[updated.length - 1] = {
-              ...updated[updated.length - 1],
-              content: updated[updated.length - 1].content + "\n\nError connecting to server."
-            };
-          }
-          return { ...c, messages: updated };
-        }
-        return c;
-      }));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const executeToolCall = async (toolCall: any, action: 'approve' | 'reject') => {
-    if (!currentConversationId || !selectedModel) return;
-    
-    let resultContent = "";
-    if (action === 'reject') {
-      resultContent = "Tool execution rejected by the user.";
-    } else {
-      setIsLoading(true);
-      try {
-        const res = await fetch('/api/tools/execute', {
+        // ── 1. Stream LLM response ──────────────────────────────────────────
+        const res = await fetch('/api/chat/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            toolName: toolCall.function.name,
-            arguments: toolCall.function.arguments
-          })
+          signal: abortControllerRef.current?.signal ?? null,
+          body: JSON.stringify({ model, messages: historyForApi })
         });
-        const data = await res.json();
-        resultContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
-      } catch (err) {
-        console.error("Failed to execute tool", err);
-        resultContent = "Error: Failed to execute tool.";
-      }
-    }
 
-    setConversations(prev => {
-      let updatedConversation: Conversation | null = null;
-      const nextConversations = prev.map(c => {
-        if (c.id === currentConversationId) {
-          const updatedMessages = [...c.messages];
-          updatedMessages.push({
-            role: 'tool',
-            content: resultContent
-          });
-          updatedMessages.push({
-            role: 'assistant',
-            content: ''
-          });
-          updatedConversation = { ...c, messages: updatedMessages };
-          return updatedConversation;
+        if (!res.ok) throw new Error('LLM stream returned ' + res.status);
+        if (!res.body) throw new Error('No response body');
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let assistantText = '';
+        let detectedToolCalls: any[] | null = null;
+
+        outer: while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          // Lines are newline-delimited JSON objects
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const event = JSON.parse(trimmed);
+              if (event.type === 'text') {
+                assistantText += event.content;
+                // Live-update the streaming assistant bubble
+                workingMessages = [
+                  ...workingMessages.slice(0, -1),
+                  { role: 'assistant', content: assistantText }
+                ];
+                updateConv(workingMessages);
+              } else if (event.type === 'tool_call') {
+                detectedToolCalls = event.toolCalls ?? [];
+                // Attach tool_calls to the current assistant message with status 'pending'
+                const toolCallsWithStatus = detectedToolCalls.map(tc => ({
+                  ...tc,
+                  status: 'pending'
+                }));
+                workingMessages = [
+                  ...workingMessages.slice(0, -1),
+                  { role: 'assistant', content: assistantText, tool_calls: toolCallsWithStatus }
+                ];
+                updateConv(workingMessages);
+                break outer;
+              } else if (event.type === 'done') {
+                const streamTps = event.tps;
+                workingMessages = [
+                  ...workingMessages.slice(0, -1),
+                  { role: 'assistant', content: assistantText, tps: streamTps }
+                ];
+                updateConv(workingMessages);
+              }
+            } catch { /* ignore malformed lines */ }
+          }
         }
-        return c;
-      });
-      
-      if (updatedConversation) {
-        setTimeout(() => triggerAssistantResponse(updatedConversation!.messages), 0);
+
+        // ── 2. No tool call → final answer, done ───────────────────────────
+        if (!detectedToolCalls || detectedToolCalls.length === 0) {
+          setAgentStatus('');
+          break;
+        }
+
+        // ── 3. Execute each tool and append results ─────────────────────────
+        setAgentStatus(`Iteration ${iteration + 1} — executing ${detectedToolCalls.length} tool(s)…`);
+
+        for (const tc of detectedToolCalls) {
+          const toolName = tc.function?.name ?? tc.name;
+          const toolArgs = tc.function?.arguments ?? tc.arguments ?? {};
+
+          // Update the assistant message's tool call status to 'running'
+          workingMessages = workingMessages.map(m => {
+            if (m.role === 'assistant' && m.tool_calls) {
+              const updatedCalls = m.tool_calls.map(call => {
+                if ((call.function?.name ?? call.name) === toolName) {
+                  return { ...call, status: 'running' };
+                }
+                return call;
+              });
+              return { ...m, tool_calls: updatedCalls };
+            }
+            return m;
+          });
+          updateConv(workingMessages);
+
+          setAgentStatus(`invoking tool: ${toolName}`);
+
+          let resultContent: string;
+          let toolSuccess = true;
+          try {
+            const toolRes = await fetch('/api/tools/execute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: abortControllerRef.current?.signal ?? null,
+              body: JSON.stringify({ toolName, arguments: toolArgs })
+            });
+            const data = await toolRes.json();
+            resultContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+          } catch (err: any) {
+            toolSuccess = false;
+            resultContent = `Error executing tool "${toolName}": ${err?.message ?? err}`;
+          }
+
+          // Append tool result message for API history
+          workingMessages = [
+            ...workingMessages,
+            { role: 'tool', content: resultContent }
+          ];
+
+          // Update the assistant message's tool call with result and status
+          workingMessages = workingMessages.map(m => {
+            if (m.role === 'assistant' && m.tool_calls) {
+              const updatedCalls = m.tool_calls.map(call => {
+                if ((call.function?.name ?? call.name) === toolName) {
+                  return { 
+                    ...call, 
+                    status: toolSuccess ? 'success' : 'error',
+                    result: resultContent
+                  };
+                }
+                return call;
+              });
+              return { ...m, tool_calls: updatedCalls };
+            }
+            return m;
+          });
+          updateConv(workingMessages);
+        }
+
+        // ── 4. Add empty assistant bubble for the next iteration ────────────
+        workingMessages = [
+          ...workingMessages,
+          { role: 'assistant', content: '' }
+        ];
+        updateConv(workingMessages);
+
+        setAgentStatus(`Iteration ${iteration + 1} complete — continuing…`);
       }
-      return nextConversations;
-    });
-  };
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        // User stopped generation — leave whatever was streamed
+        setAgentStatus('');
+      } else {
+        console.error('Agent loop error:', error);
+        // Append error to the trailing assistant bubble
+        workingMessages = [
+          ...workingMessages.slice(0, -1),
+          {
+            role: 'assistant',
+            content: (workingMessages.at(-1)?.content ?? '') +
+              '\n\n⚠️ Error: ' + (error?.message ?? String(error))
+          }
+        ];
+        updateConv(workingMessages);
+      }
+    } finally {
+      setIsLoading(false);
+      setAgentStatus('');
+      setAgentIteration(0);
+    }
+  }, []);
 
   const sendMessage = () => {
     if (!inputMessage.trim() || !selectedModel || !currentConversationId) return;
 
     const userMessage = inputMessage;
     setInputMessage('');
-    
+
+    abortControllerRef.current = new AbortController();
+
     let currentHistory: ChatMessage[] = [];
+    const convId = currentConversationId;
+    const model = selectedModel;
 
     setConversations(prev => prev.map(c => {
-      if (c.id === currentConversationId) {
+      if (c.id === convId) {
         const updatedMessages: ChatMessage[] = [
           ...c.messages,
           { role: 'user', content: userMessage },
-          { role: 'assistant', content: '' }
+          { role: 'assistant', content: '' }  // placeholder bubble for streaming
         ];
-        const title = c.title === 'New Chat' ? (userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage) : c.title;
+        const title = c.title === 'New Chat'
+          ? (userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage)
+          : c.title;
         currentHistory = updatedMessages;
-        return { ...c, messages: updatedMessages, title, model: selectedModel };
+        return { ...c, messages: updatedMessages, title, model };
       }
       return c;
     }));
 
     setTimeout(() => {
-      triggerAssistantResponse(currentHistory);
+      runAgentLoop(currentHistory, convId, model);
     }, 0);
   };
 
@@ -751,50 +907,28 @@ function App() {
                 <p>Select a model and start chatting.</p>
               </div>
             ) : (
-              messages.map((msg, i) => (
-                <div key={i} className={`message-row ${msg.role}`}>
-                  <div className="message-container">
-                    <div className={`avatar ${msg.role}`}>
-                      {msg.role === 'user' ? '👤' : msg.role === 'tool' ? '🛠️' : '🤖'}
-                    </div>
-                    <div className="message-content">
-                      <div className={`message-bubble ${msg.role}`}>
-                        {msg.role === 'tool' ? (
-                          <div className="tool-result-block">
-                             <div className="tool-result-header">Tool Execution Result</div>
-                             <pre>{msg.content}</pre>
-                          </div>
-                        ) : (
+              messages.map((msg, i) => {
+                if (msg.role === 'tool') return null;
+                return (
+                  <div key={i} className={`message-row ${msg.role}`}>
+                    <div className="message-container">
+                      <div className={`avatar ${msg.role}`}>
+                        {msg.role === 'user' ? '👤' : '🤖'}
+                      </div>
+                      <div className="message-content">
+                        <div className={`message-bubble ${msg.role}`}>
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {msg.content}
                           </ReactMarkdown>
-                        )}
-                        
-                        {msg.tool_calls && msg.tool_calls.map((tc, tcIndex) => {
-                           const isLastMessage = i === messages.length - 1;
-                           return (
-                             <div className="tool-call-card" key={tcIndex}>
-                               <div className="tool-call-header">
-                                 <span className="tool-call-icon">⚙️</span>
-                                 <span className="tool-call-title">Tool Request: {tc.function.name}</span>
-                               </div>
-                               <div className="tool-call-args">
-                                 <pre>{JSON.stringify(tc.function.arguments, null, 2)}</pre>
-                               </div>
-                               {isLastMessage && !isLoading && (
-                                 <div className="tool-call-actions">
-                                   <button className="tool-approve-btn" onClick={() => executeToolCall(tc, 'approve')}>
-                                     Approve & Run
-                                   </button>
-                                   <button className="tool-reject-btn" onClick={() => executeToolCall(tc, 'reject')}>
-                                     Reject
-                                   </button>
-                                 </div>
-                               )}
-                             </div>
-                           );
-                        })}
-                      </div>
+                          
+                          {msg.tool_calls && msg.tool_calls.length > 0 && (
+                            <div className="tool-calls-container">
+                              {msg.tool_calls.map((tc, tcIndex) => (
+                                <ToolCallAccordionCard key={tcIndex} tc={tc} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       <div className="message-actions">
                         {msg.role === 'assistant' && msg.tps !== undefined && (
                           <span className="tps-indicator">
@@ -816,11 +950,25 @@ function App() {
                     </div>
                   </div>
                 </div>
-              ))
+              );
+            })
             )}
             <div ref={messagesEndRef} />
           </div>
-          
+
+          {/* Agent status bar – visible while the loop is running */}
+          {isLoading && agentStatus && (
+            <div className="agent-status-bar">
+              <span className="agent-status-spinner">⟳</span>
+              <span className="agent-status-text">{agentStatus}</span>
+              {agentIteration > 0 && (
+                <span className="agent-iteration-badge">
+                  Iteration {agentIteration} / {MAX_AGENT_ITERATIONS}
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="chat-input-container">
             <input 
               type="text" 
