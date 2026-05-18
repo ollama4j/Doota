@@ -177,8 +177,13 @@ function App() {
           ) : (
             messages.map((msg, i) => (
               <div key={i} className={`message-row ${msg.role}`}>
-                <div className={`message-bubble ${msg.role}`}>
-                  {msg.content}
+                <div className="message-container">
+                  <div className={`avatar ${msg.role}`}>
+                    {msg.role === 'user' ? '👤' : '🤖'}
+                  </div>
+                  <div className={`message-bubble ${msg.role}`}>
+                    {msg.content}
+                  </div>
                 </div>
               </div>
             ))
