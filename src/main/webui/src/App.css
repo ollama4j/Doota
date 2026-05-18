@@ -853,7 +853,8 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: left;
+  text-align: left;    
+  min-height: 22px;
 }
 
 .model-option-item:hover {
@@ -1150,4 +1151,110 @@ body {
 .toggle-tool-button.disabled:hover {
   background: #10b981;
   color: #ffffff;
+}
+
+/* Tool execution UI */
+.tool-call-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin: 12px 0;
+  overflow: hidden;
+}
+
+.tool-call-header {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tool-call-icon {
+  font-size: 1.1rem;
+}
+
+.tool-call-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #ececf1;
+}
+
+.tool-call-args {
+  padding: 14px;
+}
+
+.tool-call-args pre {
+  margin: 0 !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+  font-size: 0.85rem !important;
+}
+
+.tool-call-actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tool-approve-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tool-approve-btn:hover {
+  background: var(--primary-hover);
+}
+
+.tool-reject-btn {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tool-reject-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.tool-result-block {
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 3px solid var(--primary);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.tool-result-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8e8ea0;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.tool-result-block pre {
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 0.9rem !important;
+  white-space: pre-wrap;
+  word-break: break-all;
 }

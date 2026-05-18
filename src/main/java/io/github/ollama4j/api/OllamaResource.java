@@ -1,7 +1,10 @@
 package io.github.ollama4j.api;
 
+import io.github.ollama4j.models.chat.OllamaChatMessage;
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
+import io.github.ollama4j.models.chat.OllamaChatResult;
+import io.github.ollama4j.models.chat.OllamaChatToolCalls;
 import io.github.ollama4j.models.response.Model;
 import io.github.ollama4j.tools.Tools;
 import io.smallrye.mutiny.Multi;
@@ -30,10 +33,8 @@ public class OllamaResource {
 
     @GET
     @Path("/models")
-    public List<String> getModels() throws Exception {
-        return ollamaService.listModels().stream()
-                .map(Model::getName)
-                .collect(Collectors.toList());
+    public List<Model> getModels() throws Exception {
+        return ollamaService.listModels();
     }
 
     @GET
@@ -148,30 +149,87 @@ public class OllamaResource {
         return Multi.createFrom().emitter(emitter -> {
             new Thread(() -> {
                 try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+                    List<OllamaChatMessage> history = new java.util.ArrayList<>();
+                    if (req.messages != null) {
+                        for (ChatRequest.Message m : req.messages) {
+                            OllamaChatMessageRole role;
+                            try {
+                                role = OllamaChatMessageRole.getRole(m.role.toUpperCase());
+                            } catch(Exception e) {
+                                role = OllamaChatMessageRole.USER;
+                            }
+                            OllamaChatMessage msg = new OllamaChatMessage(role, m.content != null ? m.content : "");
+                            history.add(msg);
+                        }
+                    }
+
                     OllamaChatRequest requestModel = OllamaChatRequest.builder()
                             .withModel(req.model)
-                            .withMessage(OllamaChatMessageRole.USER, req.message)
+                            .withMessages(history)
                             .build();
 
                     List<Tools.Tool> enabledTools = ollamaService.getEnabledTools();
                     if (!enabledTools.isEmpty()) {
                         requestModel.setTools(enabledTools);
-                        // useTools=false → SDK auto-executes tools and loops internally
-                        // useTools=true  → client-managed (we'd have to invoke tools manually)
-                        requestModel.setUseTools(false);
+                        requestModel.setUseTools(true);
                     }
 
-                    ollamaService.getClient().chat(requestModel, message -> {
-                        String response = message.getMessage().getResponse();
-                        if (response != null) {
-                            emitter.emit(response);
+                    OllamaChatResult result = ollamaService.getClient().chat(requestModel, chunk -> {
+                        String response = chunk.getMessage().getResponse();
+                        if (response != null && !response.isEmpty()) {
+                            try {
+                                java.util.Map<String, String> event = new java.util.HashMap<>();
+                                event.put("type", "text");
+                                event.put("content", response);
+                                emitter.emit(mapper.writeValueAsString(event) + "\n");
+                            } catch (Exception ex) {
+                                // ignore
+                            }
                         }
                     });
+
+                    if (result.getResponseModel() != null && result.getResponseModel().getMessage() != null && result.getResponseModel().getMessage().getToolCalls() != null && !result.getResponseModel().getMessage().getToolCalls().isEmpty()) {
+                        java.util.Map<String, Object> event = new java.util.HashMap<>();
+                        event.put("type", "tool_call");
+
+                        List<java.util.Map<String, Object>> tcs = new java.util.ArrayList<>();
+                        for (OllamaChatToolCalls tc : result.getResponseModel().getMessage().getToolCalls()) {
+                            java.util.Map<String, Object> tcMap = new java.util.HashMap<>();
+                            java.util.Map<String, Object> funcMap = new java.util.HashMap<>();
+                            funcMap.put("name", tc.getFunction().getName());
+                            funcMap.put("arguments", tc.getFunction().getArguments());
+                            tcMap.put("function", funcMap);
+                            tcs.add(tcMap);
+                        }
+                        event.put("toolCalls", tcs);
+                        emitter.emit(mapper.writeValueAsString(event) + "\n");
+                    }
+
                     emitter.complete();
                 } catch (Exception e) {
                     emitter.fail(e);
                 }
             }).start();
         });
+    }
+
+    @POST
+    @Path("/tools/execute")
+    public Response executeTool(ToolExecutionRequest req) {
+        try {
+            List<Tools.Tool> enabledTools = ollamaService.getEnabledTools();
+            for (Tools.Tool tool : enabledTools) {
+                if (tool.getToolSpec().getName().equals(req.toolName)) {
+                    Object result = tool.getToolFunction().apply(req.arguments);
+                    return Response.ok(result).build();
+                }
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity(java.util.Map.of("error", "Tool not found")).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity(java.util.Map.of("error", e.getMessage())).build();
+        }
     }
 }

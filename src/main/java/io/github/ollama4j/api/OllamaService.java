@@ -9,19 +9,67 @@ import io.github.ollama4j.api.tools.SystemInfoToolFunction;
 import io.github.ollama4j.api.tools.PlatformTypeToolFunction;
 import io.github.ollama4j.api.tools.GetHomeDirectoryToolFunction;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ApplicationScoped
 public class OllamaService {
     private Ollama ollama;
     private String host = "http://localhost:11434";
+    private boolean enableTools = true;
 
     private final List<ToolInfo> toolsList = new ArrayList<>();
     private final Map<String, Tools.Tool> toolsMap = new HashMap<>();
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public static class Settings {
+        public String ollamaUrl = "http://localhost:11434";
+        public boolean enableTools = true;
+    }
 
     public OllamaService() {
+        loadSettings();
         initOllama();
         initTools();
+    }
+
+    private File getSettingsFile() {
+        String home = System.getProperty("user.home");
+        File dir = new File(home, "ollama4j-ui");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return new File(dir, "settings.json");
+    }
+
+    private void loadSettings() {
+        File file = getSettingsFile();
+        if (file.exists()) {
+            try {
+                Settings settings = mapper.readValue(file, Settings.class);
+                if (settings.ollamaUrl != null && !settings.ollamaUrl.trim().isEmpty()) {
+                    this.host = settings.ollamaUrl;
+                }
+                this.enableTools = settings.enableTools;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            saveSettings();
+        }
+    }
+
+    private void saveSettings() {
+        try {
+            Settings settings = new Settings();
+            settings.ollamaUrl = this.host;
+            settings.enableTools = this.enableTools;
+            mapper.writerWithDefaultPrettyPrinter().writeValue(getSettingsFile(), settings);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void initOllama() {
@@ -164,6 +212,7 @@ public class OllamaService {
     }
 
     public List<Tools.Tool> getEnabledTools() {
+        if (!enableTools) return new ArrayList<>();
         List<Tools.Tool> enabledTools = new ArrayList<>();
         for (ToolInfo info : toolsList) {
             if (info.isEnabled()) {
@@ -191,6 +240,16 @@ public class OllamaService {
     public void setHost(String host) {
         this.host = host;
         initOllama();
+        saveSettings();
+    }
+
+    public boolean isEnableTools() {
+        return enableTools;
+    }
+
+    public void setEnableTools(boolean enableTools) {
+        this.enableTools = enableTools;
+        saveSettings();
     }
 
     public void deleteModel(String modelName) throws Exception {

@@ -6,9 +6,10 @@ import { Copy, Check } from 'lucide-react';
 import './App.css';
 
 interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   content: string;
   tps?: number;
+  tool_calls?: any[];
 }
 
 interface Conversation {
@@ -25,6 +26,13 @@ interface ToolInfoDTO {
   enabled: boolean;
 }
 
+interface OllamaModel {
+  name: string;
+  modifiedAt?: string;
+  modified_at?: string;
+  size?: number;
+}
+
 function App() {
   const [models, setModels] = useState<string[]>([]);
   const [tools, setTools] = useState<ToolInfoDTO[]>([]);
@@ -38,7 +46,7 @@ function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hostUrl, setHostUrl] = useState('');
-  const [settingsModels, setSettingsModels] = useState<string[]>([]);
+  const [settingsModels, setSettingsModels] = useState<OllamaModel[]>([]);
   const [loadedModels, setLoadedModels] = useState<string[]>([]);
   const [modelDetails, setModelDetails] = useState<Record<string, any>>({});
   const [isServerReachable, setIsServerReachable] = useState<boolean | null>(null);
@@ -125,16 +133,27 @@ function App() {
         return res.json();
       })
       .then(data => {
-        setModels(data);
-        setSettingsModels(data);
-        if (data && data.length > 0) {
-          data.forEach((m: string) => fetchModelDetails(m));
-          if (currentConversation && currentConversation.model) {
-            setSelectedModel(currentConversation.model);
+        if (data && Array.isArray(data)) {
+          const isObjectArray = data.length > 0 && typeof data[0] === 'object';
+          const modelNames = isObjectArray ? data.map((m: any) => m.name) : data;
+          const modelObjects = isObjectArray ? data : data.map((m: string) => ({ name: m }));
+          
+          setModels(modelNames);
+          setSettingsModels(modelObjects);
+          
+          if (modelNames.length > 0) {
+            modelNames.forEach((m: string) => fetchModelDetails(m));
+            if (currentConversation && currentConversation.model) {
+              setSelectedModel(currentConversation.model);
+            } else {
+              setSelectedModel(modelNames[0]);
+            }
           } else {
-            setSelectedModel(data[0]);
+            setSelectedModel('');
           }
         } else {
+          setModels([]);
+          setSettingsModels([]);
           setSelectedModel('');
         }
       })
@@ -356,28 +375,10 @@ function App() {
     setIsLoading(false);
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || !selectedModel || !currentConversationId) return;
-
+  const triggerAssistantResponse = async (history: ChatMessage[]) => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
-
-    const userMessage = inputMessage;
-    setInputMessage('');
     setIsLoading(true);
-
-    setConversations(prev => prev.map(c => {
-      if (c.id === currentConversationId) {
-        const updatedMessages: ChatMessage[] = [
-          ...c.messages,
-          { role: 'user', content: userMessage },
-          { role: 'assistant', content: '' }
-        ];
-        const title = c.title === 'New Chat' ? (userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage) : c.title;
-        return { ...c, messages: updatedMessages, title, model: selectedModel };
-      }
-      return c;
-    }));
 
     try {
       const response = await fetch('/api/chat/stream', {
@@ -385,7 +386,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: selectedModel,
-          message: userMessage
+          messages: history
         }),
         signal: controller.signal
       });
@@ -395,33 +396,62 @@ function App() {
         const decoder = new TextDecoder();
         let totalChars = 0;
         const startTime = Date.now();
+        let buffer = '';
 
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value);
-          if (chunk) {
-            totalChars += chunk.length;
-            const elapsedSeconds = (Date.now() - startTime) / 1000;
-            let currentTps: number | undefined;
-            if (elapsedSeconds > 0.05) {
-              const approxTokens = totalChars / 4;
-              currentTps = approxTokens / elapsedSeconds;
-            }
-            setConversations(prev => prev.map(c => {
-              if (c.id === currentConversationId) {
-                const updated = [...c.messages];
-                if (updated.length > 0) {
-                  updated[updated.length - 1] = {
-                    ...updated[updated.length - 1],
-                    content: updated[updated.length - 1].content + chunk,
-                    ...(currentTps !== undefined ? { tps: currentTps } : {})
-                  };
+          buffer += decoder.decode(value, { stream: true });
+          
+          let newlineIndex;
+          while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+            if (line) {
+              try {
+                const event = JSON.parse(line);
+                if (event.type === 'text') {
+                  const chunk = event.content;
+                  totalChars += chunk.length;
+                  const elapsedSeconds = (Date.now() - startTime) / 1000;
+                  let currentTps: number | undefined;
+                  if (elapsedSeconds > 0.05) {
+                    currentTps = (totalChars / 4) / elapsedSeconds;
+                  }
+                  
+                  setConversations(prev => prev.map(c => {
+                    if (c.id === currentConversationId) {
+                      const updated = [...c.messages];
+                      if (updated.length > 0) {
+                        updated[updated.length - 1] = {
+                          ...updated[updated.length - 1],
+                          content: updated[updated.length - 1].content + chunk,
+                          ...(currentTps !== undefined ? { tps: currentTps } : {})
+                        };
+                      }
+                      return { ...c, messages: updated };
+                    }
+                    return c;
+                  }));
+                } else if (event.type === 'tool_call') {
+                  setConversations(prev => prev.map(c => {
+                    if (c.id === currentConversationId) {
+                      const updated = [...c.messages];
+                      if (updated.length > 0) {
+                        updated[updated.length - 1] = {
+                          ...updated[updated.length - 1],
+                          tool_calls: event.toolCalls
+                        };
+                      }
+                      return { ...c, messages: updated };
+                    }
+                    return c;
+                  }));
                 }
-                return { ...c, messages: updated };
+              } catch (e) {
+                console.error("Failed to parse JSON stream event", e, line);
               }
-              return c;
-            }));
+            }
           }
         }
       }
@@ -436,7 +466,7 @@ function App() {
             if (updated.length > 0) {
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
-                content: "Error connecting to server."
+                content: updated[updated.length - 1].content + "\n\nError connecting to server."
               };
             }
             return { ...c, messages: updated };
@@ -448,6 +478,84 @@ function App() {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
+  };
+
+  const executeToolCall = async (toolCall: any, action: 'approve' | 'reject') => {
+    if (!currentConversationId || !selectedModel) return;
+    
+    let resultContent = "";
+    if (action === 'reject') {
+      resultContent = "Tool execution rejected by the user.";
+    } else {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/tools/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toolName: toolCall.function.name,
+            arguments: toolCall.function.arguments
+          })
+        });
+        const data = await res.json();
+        resultContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+      } catch (err) {
+        console.error("Failed to execute tool", err);
+        resultContent = "Error: Failed to execute tool.";
+      }
+    }
+
+    setConversations(prev => {
+      let updatedConversation: Conversation | null = null;
+      const nextConversations = prev.map(c => {
+        if (c.id === currentConversationId) {
+          const updatedMessages = [...c.messages];
+          updatedMessages.push({
+            role: 'tool',
+            content: resultContent
+          });
+          updatedMessages.push({
+            role: 'assistant',
+            content: ''
+          });
+          updatedConversation = { ...c, messages: updatedMessages };
+          return updatedConversation;
+        }
+        return c;
+      });
+      
+      if (updatedConversation) {
+        setTimeout(() => triggerAssistantResponse(updatedConversation!.messages), 0);
+      }
+      return nextConversations;
+    });
+  };
+
+  const sendMessage = () => {
+    if (!inputMessage.trim() || !selectedModel || !currentConversationId) return;
+
+    const userMessage = inputMessage;
+    setInputMessage('');
+    
+    let currentHistory: ChatMessage[] = [];
+
+    setConversations(prev => prev.map(c => {
+      if (c.id === currentConversationId) {
+        const updatedMessages: ChatMessage[] = [
+          ...c.messages,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: '' }
+        ];
+        const title = c.title === 'New Chat' ? (userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage) : c.title;
+        currentHistory = updatedMessages;
+        return { ...c, messages: updatedMessages, title, model: selectedModel };
+      }
+      return c;
+    }));
+
+    setTimeout(() => {
+      triggerAssistantResponse(currentHistory);
+    }, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -577,22 +685,51 @@ function App() {
                 {settingsModels.length === 0 ? (
                   <div style={{ color: '#8e8ea0', padding: '10px' }}>No models found.</div>
                 ) : (
-                  settingsModels.map(m => (
-                    <div className="model-item" key={m}>
-                      <div className="model-info-container">
-                        <span className="model-name">{m}</span>
-                        {modelDetails[m] && (
-                          <div className="model-details-badge-container">
-                            {modelDetails[m].details?.family && <span className="model-badge family">Family: {modelDetails[m].details.family}</span>}
-                            {modelDetails[m].details?.parameter_size && <span className="model-badge params">Params: {modelDetails[m].details.parameter_size}</span>}
-                            {modelDetails[m].details?.quantization_level && <span className="model-badge quantization">Quantization: {modelDetails[m].details.quantization_level}</span>}
-                            {modelDetails[m].details?.format && <span className="model-badge format">Format: {modelDetails[m].details.format}</span>}
+                  settingsModels.map(m => {
+                    const modelName = m.name;
+                    const dateStr = m.modifiedAt || m.modified_at;
+                    const sizeBytes = m.size;
+                    
+                    let dateDisplay = '';
+                    if (dateStr) {
+                      try {
+                        const d = new Date(dateStr);
+                        dateDisplay = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                      } catch (e) {
+                        dateDisplay = dateStr;
+                      }
+                    }
+                    
+                    let sizeDisplay = '';
+                    if (sizeBytes) {
+                      if (sizeBytes > 1024 * 1024 * 1024) {
+                        sizeDisplay = (sizeBytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+                      } else {
+                        sizeDisplay = (sizeBytes / (1024 * 1024)).toFixed(2) + ' MB';
+                      }
+                    }
+
+                    return (
+                      <div className="model-item" key={modelName}>
+                        <div className="model-info-container">
+                          <span className="model-name">{modelName}</span>
+                          <div className="model-meta-container" style={{ fontSize: '0.8rem', color: '#8e8ea0', marginTop: '4px', marginBottom: '8px' }}>
+                            {dateDisplay && <span style={{ marginRight: '15px' }}>🕒 {dateDisplay}</span>}
+                            {sizeDisplay && <span>📦 {sizeDisplay}</span>}
                           </div>
-                        )}
+                          {modelDetails[modelName] && (
+                            <div className="model-details-badge-container">
+                              {modelDetails[modelName].details?.family && <span className="model-badge family">Family: {modelDetails[modelName].details.family}</span>}
+                              {modelDetails[modelName].details?.parameter_size && <span className="model-badge params">Params: {modelDetails[modelName].details.parameter_size}</span>}
+                              {modelDetails[modelName].details?.quantization_level && <span className="model-badge quantization">Quantization: {modelDetails[modelName].details.quantization_level}</span>}
+                              {modelDetails[modelName].details?.format && <span className="model-badge format">Format: {modelDetails[modelName].details.format}</span>}
+                            </div>
+                          )}
+                        </div>
+                        <button className="delete-button" onClick={() => deleteModel(modelName)}>Delete</button>
                       </div>
-                      <button className="delete-button" onClick={() => deleteModel(m)}>Delete</button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -643,13 +780,45 @@ function App() {
                 <div key={i} className={`message-row ${msg.role}`}>
                   <div className="message-container">
                     <div className={`avatar ${msg.role}`}>
-                      {msg.role === 'user' ? '👤' : '🤖'}
+                      {msg.role === 'user' ? '👤' : msg.role === 'tool' ? '🛠️' : '🤖'}
                     </div>
                     <div className="message-content">
                       <div className={`message-bubble ${msg.role}`}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content}
-                        </ReactMarkdown>
+                        {msg.role === 'tool' ? (
+                          <div className="tool-result-block">
+                             <div className="tool-result-header">Tool Execution Result</div>
+                             <pre>{msg.content}</pre>
+                          </div>
+                        ) : (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        )}
+                        
+                        {msg.tool_calls && msg.tool_calls.map((tc, tcIndex) => {
+                           const isLastMessage = i === messages.length - 1;
+                           return (
+                             <div className="tool-call-card" key={tcIndex}>
+                               <div className="tool-call-header">
+                                 <span className="tool-call-icon">⚙️</span>
+                                 <span className="tool-call-title">Tool Request: {tc.function.name}</span>
+                               </div>
+                               <div className="tool-call-args">
+                                 <pre>{JSON.stringify(tc.function.arguments, null, 2)}</pre>
+                               </div>
+                               {isLastMessage && !isLoading && (
+                                 <div className="tool-call-actions">
+                                   <button className="tool-approve-btn" onClick={() => executeToolCall(tc, 'approve')}>
+                                     Approve & Run
+                                   </button>
+                                   <button className="tool-reject-btn" onClick={() => executeToolCall(tc, 'reject')}>
+                                     Reject
+                                   </button>
+                                 </div>
+                               )}
+                             </div>
+                           );
+                        })}
                       </div>
                       <div className="message-actions">
                         {msg.role === 'assistant' && msg.tps !== undefined && (
