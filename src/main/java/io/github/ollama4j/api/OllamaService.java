@@ -6,6 +6,7 @@ import io.github.ollama4j.tools.Tools;
 import io.github.ollama4j.api.tools.FindFilesByNameToolFunction;
 import io.github.ollama4j.api.tools.FindFilesByExtensionToolFunction;
 import io.github.ollama4j.api.tools.SystemInfoToolFunction;
+import io.github.ollama4j.api.tools.PlatformTypeToolFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.*;
 
@@ -91,6 +92,18 @@ public class OllamaService {
                 .toolFunction(new SystemInfoToolFunction())
                 .build();
 
+        // 4. Platform Type
+        Tools.ToolSpec platformTypeSpec = new Tools.ToolSpec();
+        platformTypeSpec.setName("platform_type");
+        platformTypeSpec.setDescription(
+            "Identifies the platform type of this computer: linux, mac, or windows.");
+        platformTypeSpec.setParameters(Tools.Parameters.of(new HashMap<>()));
+
+        Tools.Tool platformTypeTool = Tools.Tool.builder()
+                .toolSpec(platformTypeSpec)
+                .toolFunction(new PlatformTypeToolFunction())
+                .build();
+
         // Register all tools
         toolsMap.put("find_files_by_name", byNameTool);
         toolsList.add(new ToolInfo("find_files_by_name", "Find Files by Name",
@@ -103,6 +116,10 @@ public class OllamaService {
         toolsMap.put("system_info", sysInfoTool);
         toolsList.add(new ToolInfo("system_info", "System Info",
                 "Retrieve system specifications, memory status, disk space, and user environment.", true));
+
+        toolsMap.put("platform_type", platformTypeTool);
+        toolsList.add(new ToolInfo("platform_type", "Platform Type",
+                "Identify the platform type of this computer (linux, mac, or windows).", true));
     }
 
 

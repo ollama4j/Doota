@@ -2,7 +2,6 @@ package io.github.ollama4j.api;
 
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
-import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
 import io.github.ollama4j.models.response.Model;
 import io.github.ollama4j.tools.Tools;
 import io.smallrye.mutiny.Multi;
@@ -149,7 +148,7 @@ public class OllamaResource {
         return Multi.createFrom().emitter(emitter -> {
             new Thread(() -> {
                 try {
-                    OllamaChatRequest requestModel = OllamaChatRequestBuilder.builder()
+                    OllamaChatRequest requestModel = OllamaChatRequest.builder()
                             .withModel(req.model)
                             .withMessage(OllamaChatMessageRole.USER, req.message)
                             .build();

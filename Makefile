@@ -15,5 +15,5 @@ build:
 kill:
 	@lsof -ti:8080 | xargs kill -9 2>/dev/null
 
-start: build kill
+start: kill build
 	@java -jar target/*-runner.jar
