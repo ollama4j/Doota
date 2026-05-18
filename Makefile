@@ -1,5 +1,5 @@
 dev:
-	mvn quarkus:dev
+	@mvn quarkus:dev
 
 setup-dev:
 	@echo "Setting up dev environment..."
@@ -10,7 +10,10 @@ setup-dev:
 	pre-commit install --install-hooks
 
 build:
-	mvn -B clean package -DskipTests
+	@mvn -B clean package -DskipTests
 
-start: build
-	java -jar target/*-runner.jar
+kill:
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null
+
+start: build kill
+	@java -jar target/*-runner.jar

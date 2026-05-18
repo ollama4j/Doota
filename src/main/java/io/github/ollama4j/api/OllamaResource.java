@@ -31,10 +31,53 @@ public class OllamaResource {
     @GET
     @Path("/models")
     public List<String> getModels() throws Exception {
-        System.out.println("getModels called");
         return ollamaService.listModels().stream()
                 .map(Model::getName)
                 .collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/models/loaded")
+    public List<String> getLoadedModels() {
+        try {
+            return ollamaService.getClient().ps().getModels().stream()
+                    .map(m -> m.getName())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
+    @GET
+    @Path("/models/details/{modelName}")
+    public Object getModelDetails(@PathParam("modelName") String modelName) {
+        try {
+            return ollamaService.getClient().getModelDetails(modelName);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/models/unload/{modelName}")
+    public Response unloadModel(@PathParam("modelName") String modelName) {
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(ollamaService.getHost() + "/api/generate"))
+                    .header("Content-Type", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(
+                            String.format("{\"model\": \"%s\", \"keep_alive\": 0}", modelName)
+                    ))
+                    .build();
+            client.send(httpRequest, java.net.http.HttpResponse.BodyHandlers.ofString());
+            return Response.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity(e.getMessage()).build();
+        }
     }
 
     @DELETE
@@ -66,6 +109,18 @@ public class OllamaResource {
         } catch (Exception e) {
             e.printStackTrace();
             return Response.serverError().entity(e.getMessage()).build();
+        }
+    }
+
+    @GET
+    @Path("/settings/ping")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response pingHost() {
+        try {
+            boolean reachable = ollamaService.getClient().ping();
+            return Response.ok(java.util.Map.of("reachable", reachable)).build();
+        } catch (Exception e) {
+            return Response.ok(java.util.Map.of("reachable", false)).build();
         }
     }
 
