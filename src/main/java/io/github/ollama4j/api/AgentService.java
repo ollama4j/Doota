@@ -16,8 +16,14 @@ public class AgentService {
         // 1. Setup agent config
         AgentConfig config = new AgentConfig();
         config.setHost(ollamaService.getHost());
-        // For demonstration, use a robust model that supports function calling well.
-        config.setModelName("llama3.1:8b");
+        // Use the model provided by the UI, or fallback to llama3.1:8b if none provided.
+        String mdl;
+        if (req.model != null && !req.model.trim().isEmpty()) {
+            mdl = req.model;
+        } else {
+            throw new Exception("Model name not set");
+        }
+        config.setModelName(mdl);
         config.setMaxIterations(5);
 
         // 2. Create Agent Runtime using native tools from OllamaService
