@@ -10,7 +10,7 @@ import java.util.*;
  */
 public class FileSearchHelper {
 
-    public static final int MAX_VISITED = 3000;
+    public static final int MAX_VISITED = 100000;
     public static final int MAX_RESULTS = 50;
 
     public interface FileMatcher {

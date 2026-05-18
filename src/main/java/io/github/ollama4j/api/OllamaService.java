@@ -7,6 +7,7 @@ import io.github.ollama4j.api.tools.FindFilesByNameToolFunction;
 import io.github.ollama4j.api.tools.FindFilesByExtensionToolFunction;
 import io.github.ollama4j.api.tools.SystemInfoToolFunction;
 import io.github.ollama4j.api.tools.PlatformTypeToolFunction;
+import io.github.ollama4j.api.tools.GetHomeDirectoryToolFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.*;
 
@@ -47,6 +48,11 @@ public class OllamaService {
                 .description("The directory to search in. Optional. Defaults to the user's home directory.")
                 .required(false)
                 .build());
+        byNameProps.put("recursive", Tools.Property.builder()
+                .type("boolean")
+                .description("Whether to search directories recursively. Optional. Defaults to true.")
+                .required(false)
+                .build());
         byNameSpec.setParameters(Tools.Parameters.of(byNameProps));
 
         Tools.Tool byNameTool = Tools.Tool.builder()
@@ -70,6 +76,11 @@ public class OllamaService {
         byExtProps.put("searchDir", Tools.Property.builder()
                 .type("string")
                 .description("The directory to search in. Optional. Defaults to the user's home directory.")
+                .required(false)
+                .build());
+        byExtProps.put("recursive", Tools.Property.builder()
+                .type("boolean")
+                .description("Whether to search directories recursively. Optional. Defaults to true.")
                 .required(false)
                 .build());
         byExtSpec.setParameters(Tools.Parameters.of(byExtProps));
@@ -104,6 +115,18 @@ public class OllamaService {
                 .toolFunction(new PlatformTypeToolFunction())
                 .build();
 
+        // 5. Get Home Directory
+        Tools.ToolSpec getHomeDirSpec = new Tools.ToolSpec();
+        getHomeDirSpec.setName("get_home_directory");
+        getHomeDirSpec.setDescription(
+            "Retrieves the absolute path of the user's home directory on this computer.");
+        getHomeDirSpec.setParameters(Tools.Parameters.of(new HashMap<>()));
+
+        Tools.Tool getHomeDirTool = Tools.Tool.builder()
+                .toolSpec(getHomeDirSpec)
+                .toolFunction(new GetHomeDirectoryToolFunction())
+                .build();
+
         // Register all tools
         toolsMap.put("find_files_by_name", byNameTool);
         toolsList.add(new ToolInfo("find_files_by_name", "Find Files by Name",
@@ -120,6 +143,10 @@ public class OllamaService {
         toolsMap.put("platform_type", platformTypeTool);
         toolsList.add(new ToolInfo("platform_type", "Platform Type",
                 "Identify the platform type of this computer (linux, mac, or windows).", true));
+
+        toolsMap.put("get_home_directory", getHomeDirTool);
+        toolsList.add(new ToolInfo("get_home_directory", "Get Home Directory",
+                "Retrieve the absolute path to the user's home directory.", true));
     }
 
 

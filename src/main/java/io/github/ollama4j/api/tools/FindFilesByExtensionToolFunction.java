@@ -21,11 +21,20 @@ public class FindFilesByExtensionToolFunction implements ToolFunction {
         // Normalise: strip leading dot if user passed ".pdf" instead of "pdf"
         String ext = extension.startsWith(".") ? extension.toLowerCase() : "." + extension.toLowerCase();
 
+        boolean recursive = getBool(arguments, "recursive", true);
+
         return FileSearchHelper.search(
                 searchDir,
                 (filename, size) -> filename.toLowerCase().endsWith(ext),
-                true
+                recursive
         );
+    }
+
+    private boolean getBool(Map<String, Object> args, String key, boolean defaultVal) {
+        Object val = args.get(key);
+        if (val instanceof Boolean b) return b;
+        if (val instanceof String s) return Boolean.parseBoolean(s);
+        return defaultVal;
     }
 
     private String getStr(Map<String, Object> args, String key, String defaultVal) {

@@ -645,28 +645,30 @@ function App() {
                     <div className={`avatar ${msg.role}`}>
                       {msg.role === 'user' ? '👤' : '🤖'}
                     </div>
-                    <div className={`message-bubble ${msg.role}`}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                    <div className="message-actions">
-                      {msg.role === 'assistant' && msg.tps !== undefined && (
-                        <span className="tps-indicator">
-                          ⚡ {msg.tps.toFixed(1)} tok/s
-                        </span>
-                      )}
-                      <button 
-                        className="copy-message-btn" 
-                        onClick={() => copyToClipboard(msg.content, i)}
-                        title="Copy message"
-                      >
-                        {copiedIndex === i ? (
-                          <Check className="copy-icon" size={16} />
-                        ) : (
-                          <Copy className="copy-icon" size={16} />
+                    <div className="message-content">
+                      <div className={`message-bubble ${msg.role}`}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                      <div className="message-actions">
+                        {msg.role === 'assistant' && msg.tps !== undefined && (
+                          <span className="tps-indicator">
+                            ⚡ {msg.tps.toFixed(1)} tok/s
+                          </span>
                         )}
-                      </button>
+                        <button 
+                          className="copy-message-btn" 
+                          onClick={() => copyToClipboard(msg.content, i)}
+                          title="Copy message"
+                        >
+                          {copiedIndex === i ? (
+                            <Check className="copy-icon" size={16} />
+                          ) : (
+                            <Copy className="copy-icon" size={16} />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
