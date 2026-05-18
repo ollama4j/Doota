@@ -485,7 +485,7 @@ function App() {
         // Build message list for the API (exclude the trailing empty assistant bubble)
         const historyForApi = workingMessages
           .slice(0, -1)  // drop the placeholder assistant message
-          .map(m => ({ role: m.role, content: m.content }));
+          .map(m => ({ role: m.role, content: m.content, tool_calls: m.tool_calls }));
 
         // ── 1. Stream LLM response ──────────────────────────────────────────
         const res = await fetch('/api/chat/stream', {
@@ -502,7 +502,7 @@ function App() {
         const decoder = new TextDecoder();
         let buffer = '';
         let assistantText = '';
-        let detectedToolCalls: any[] | null = null;
+        let detectedToolCalls: any[] = [];
 
         outer: while (true) {
           const { done, value } = await reader.read();
@@ -552,7 +552,7 @@ function App() {
         }
 
         // ── 2. No tool call → final answer, done ───────────────────────────
-        if (!detectedToolCalls || detectedToolCalls.length === 0) {
+        if (detectedToolCalls.length === 0) {
           setAgentStatus('');
           break;
         }
@@ -590,7 +590,13 @@ function App() {
               signal: abortControllerRef.current?.signal ?? null,
               body: JSON.stringify({ toolName, arguments: toolArgs })
             });
-            const data = await toolRes.json();
+            const textResponse = await toolRes.text();
+            let data;
+            try {
+              data = JSON.parse(textResponse);
+            } catch (e) {
+              data = textResponse;
+            }
             resultContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
           } catch (err: any) {
             toolSuccess = false;

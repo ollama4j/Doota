@@ -5,6 +5,7 @@ import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import io.github.ollama4j.models.chat.OllamaChatToolCalls;
+import io.github.ollama4j.models.request.OllamaChatEndpointCaller;
 import io.github.ollama4j.models.response.Model;
 import io.github.ollama4j.tools.Tools;
 import io.smallrye.mutiny.Multi;
@@ -161,6 +162,21 @@ public class OllamaResource {
                                 role = OllamaChatMessageRole.USER;
                             }
                             OllamaChatMessage msg = new OllamaChatMessage(role, m.content != null ? m.content : "");
+                            if (m.tool_calls != null && !m.tool_calls.isEmpty()) {
+                                List<OllamaChatToolCalls> tcs = new java.util.ArrayList<>();
+                                for (ChatRequest.ToolCall tc : m.tool_calls) {
+                                    OllamaChatToolCalls ollamaTc = new OllamaChatToolCalls();
+                                    ollamaTc.setId(tc.id);
+                                    if (tc.function != null) {
+                                        io.github.ollama4j.tools.OllamaToolCallsFunction func = new io.github.ollama4j.tools.OllamaToolCallsFunction();
+                                        func.setName(tc.function.name);
+                                        func.setArguments(tc.function.arguments);
+                                        ollamaTc.setFunction(func);
+                                    }
+                                    tcs.add(ollamaTc);
+                                }
+                                msg.setToolCalls(tcs);
+                            }
                             history.add(msg);
                         }
                     }
@@ -180,7 +196,17 @@ public class OllamaResource {
                     final long startNs = System.nanoTime();
                     final int[] tokenCount = {0};
 
-                    OllamaChatResult result = ollamaService.getClient().chat(requestModel, chunk -> {
+                    String cleanHost = ollamaService.getHost();
+                    if (cleanHost != null && cleanHost.endsWith("/")) {
+                        cleanHost = cleanHost.substring(0, cleanHost.length() - 1);
+                    }
+                    OllamaChatEndpointCaller requestCaller = new OllamaChatEndpointCaller(
+                            cleanHost,
+                            null,
+                            60
+                    );
+
+                    OllamaChatResult result = requestCaller.call(requestModel, chunk -> {
                         String response = chunk.getMessage().getResponse();
                         if (response != null && !response.isEmpty()) {
                             tokenCount[0]++;
