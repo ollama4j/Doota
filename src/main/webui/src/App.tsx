@@ -376,107 +376,81 @@ function App() {
   };
 
   const triggerAssistantResponse = async (history: ChatMessage[]) => {
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat/stream', {
+      // Map history to the format expected by AgentChatRequest
+      // We exclude the last empty assistant message from history, and the last user message becomes the prompt
+      const previousMessages = history.slice(0, -2).map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+      const promptMessage = history[history.length - 2];
+
+      const response = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: selectedModel,
-          messages: history
-        }),
-        signal: controller.signal
+          prompt: promptMessage ? promptMessage.content : "",
+          history: previousMessages
+        })
       });
 
-      if (response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let totalChars = 0;
-        const startTime = Date.now();
-        let buffer = '';
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          
-          let newlineIndex;
-          while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
-            const line = buffer.slice(0, newlineIndex).trim();
-            buffer = buffer.slice(newlineIndex + 1);
-            if (line) {
-              try {
-                const event = JSON.parse(line);
-                if (event.type === 'text') {
-                  const chunk = event.content;
-                  totalChars += chunk.length;
-                  const elapsedSeconds = (Date.now() - startTime) / 1000;
-                  let currentTps: number | undefined;
-                  if (elapsedSeconds > 0.05) {
-                    currentTps = (totalChars / 4) / elapsedSeconds;
-                  }
-                  
-                  setConversations(prev => prev.map(c => {
-                    if (c.id === currentConversationId) {
-                      const updated = [...c.messages];
-                      if (updated.length > 0) {
-                        updated[updated.length - 1] = {
-                          ...updated[updated.length - 1],
-                          content: updated[updated.length - 1].content + chunk,
-                          ...(currentTps !== undefined ? { tps: currentTps } : {})
-                        };
-                      }
-                      return { ...c, messages: updated };
-                    }
-                    return c;
-                  }));
-                } else if (event.type === 'tool_call') {
-                  setConversations(prev => prev.map(c => {
-                    if (c.id === currentConversationId) {
-                      const updated = [...c.messages];
-                      if (updated.length > 0) {
-                        updated[updated.length - 1] = {
-                          ...updated[updated.length - 1],
-                          tool_calls: event.toolCalls
-                        };
-                      }
-                      return { ...c, messages: updated };
-                    }
-                    return c;
-                  }));
-                }
-              } catch (e) {
-                console.error("Failed to parse JSON stream event", e, line);
-              }
-            }
-          }
-        }
+      if (!response.ok) {
+        throw new Error('Server returned ' + response.status);
       }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log("Generation stopped by user.");
-      } else {
-        console.error("Chat error:", error);
+
+      const memory = await response.json();
+      
+      // memory.messages contains the full history, including tool calls, tool results, and the final response.
+      // We can map it back to our ChatMessage format
+      if (memory && memory.messages) {
+        const newHistory = memory.messages
+           .filter((m: any) => m.role !== 'SYSTEM') // hide system prompt
+           .map((m: any) => {
+               const chatMsg: ChatMessage = {
+                 role: m.role.toLowerCase(),
+                 content: m.content || ''
+               };
+               if (m.toolCalls && m.toolCalls.length > 0) {
+                 chatMsg.tool_calls = m.toolCalls.map((tc: any) => ({
+                   function: {
+                     name: tc.tool,
+                     arguments: tc.arguments
+                   }
+                 }));
+               }
+               if (m.role === 'TOOL') {
+                  chatMsg.content = m.toolResult || '';
+               }
+               return chatMsg;
+           });
+
         setConversations(prev => prev.map(c => {
           if (c.id === currentConversationId) {
-            const updated = [...c.messages];
-            if (updated.length > 0) {
-              updated[updated.length - 1] = {
-                ...updated[updated.length - 1],
-                content: updated[updated.length - 1].content + "\n\nError connecting to server."
-              };
-            }
-            return { ...c, messages: updated };
+            return { ...c, messages: newHistory };
           }
           return c;
         }));
       }
+
+    } catch (error) {
+      console.error("Chat error:", error);
+      setConversations(prev => prev.map(c => {
+        if (c.id === currentConversationId) {
+          const updated = [...c.messages];
+          if (updated.length > 0) {
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content: updated[updated.length - 1].content + "\n\nError connecting to server."
+            };
+          }
+          return { ...c, messages: updated };
+        }
+        return c;
+      }));
     } finally {
       setIsLoading(false);
-      abortControllerRef.current = null;
     }
   };
 

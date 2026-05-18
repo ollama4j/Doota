@@ -31,6 +31,9 @@ public class OllamaResource {
     @Inject
     OllamaService ollamaService;
 
+    @Inject
+    AgentService agentService;
+
     @GET
     @Path("/models")
     public List<Model> getModels() throws Exception {
@@ -227,6 +230,21 @@ public class OllamaResource {
                 }
             }
             return Response.status(Response.Status.NOT_FOUND).entity(java.util.Map.of("error", "Tool not found")).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity(java.util.Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    @POST
+    @Path("/agent/chat")
+    public Response agentChat(AgentChatRequest req) {
+        try {
+            if (req == null || req.prompt == null || req.prompt.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST).entity(java.util.Map.of("error", "Prompt cannot be empty")).build();
+            }
+            memory.ConversationMemory memory = agentService.runAgent(req);
+            return Response.ok(memory).build();
         } catch (Exception e) {
             e.printStackTrace();
             return Response.serverError().entity(java.util.Map.of("error", e.getMessage())).build();

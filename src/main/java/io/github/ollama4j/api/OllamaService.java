@@ -8,6 +8,10 @@ import io.github.ollama4j.api.tools.FindFilesByExtensionToolFunction;
 import io.github.ollama4j.api.tools.SystemInfoToolFunction;
 import io.github.ollama4j.api.tools.PlatformTypeToolFunction;
 import io.github.ollama4j.api.tools.GetHomeDirectoryToolFunction;
+import io.github.ollama4j.api.tools.CalculatorTool;
+import io.github.ollama4j.api.tools.DateTimeTool;
+import io.github.ollama4j.api.tools.FileReadTool;
+import io.github.ollama4j.api.tools.WeatherTool;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.File;
 import java.io.IOException;
@@ -175,6 +179,42 @@ public class OllamaService {
                 .toolFunction(new GetHomeDirectoryToolFunction())
                 .build();
 
+        // 6. Calculator Tool
+        Tools.ToolSpec calcSpec = new Tools.ToolSpec();
+        calcSpec.setName("calculator");
+        calcSpec.setDescription("Evaluates a mathematical expression. Use this to perform math calculations like addition, subtraction, multiplication, and division.");
+        Map<String, Tools.Property> calcProps = new LinkedHashMap<>();
+        calcProps.put("operation", Tools.Property.builder().type("string").description("The operation to perform (add, subtract, multiply, divide)").required(true).build());
+        calcProps.put("a", Tools.Property.builder().type("number").description("First operand").required(true).build());
+        calcProps.put("b", Tools.Property.builder().type("number").description("Second operand").required(true).build());
+        calcSpec.setParameters(Tools.Parameters.of(calcProps));
+        Tools.Tool calcTool = Tools.Tool.builder().toolSpec(calcSpec).toolFunction(new CalculatorTool()).build();
+        
+        // 7. DateTime Tool
+        Tools.ToolSpec dateTimeSpec = new Tools.ToolSpec();
+        dateTimeSpec.setName("get_current_datetime");
+        dateTimeSpec.setDescription("Gets the current system date and time.");
+        dateTimeSpec.setParameters(Tools.Parameters.of(new HashMap<>()));
+        Tools.Tool dateTimeTool = Tools.Tool.builder().toolSpec(dateTimeSpec).toolFunction(new DateTimeTool()).build();
+
+        // 8. Weather Tool
+        Tools.ToolSpec weatherSpec = new Tools.ToolSpec();
+        weatherSpec.setName("get_weather");
+        weatherSpec.setDescription("Gets the current weather for a specified city or location.");
+        Map<String, Tools.Property> weatherProps = new LinkedHashMap<>();
+        weatherProps.put("location", Tools.Property.builder().type("string").description("The city and state, e.g. San Francisco, CA").required(true).build());
+        weatherSpec.setParameters(Tools.Parameters.of(weatherProps));
+        Tools.Tool weatherTool = Tools.Tool.builder().toolSpec(weatherSpec).toolFunction(new WeatherTool()).build();
+
+        // 9. File Read Tool
+        Tools.ToolSpec fileReadSpec = new Tools.ToolSpec();
+        fileReadSpec.setName("read_file");
+        fileReadSpec.setDescription("Reads the contents of a local file at the specified absolute path.");
+        Map<String, Tools.Property> fileReadProps = new LinkedHashMap<>();
+        fileReadProps.put("filePath", Tools.Property.builder().type("string").description("The absolute file path to read").required(true).build());
+        fileReadSpec.setParameters(Tools.Parameters.of(fileReadProps));
+        Tools.Tool fileReadTool = Tools.Tool.builder().toolSpec(fileReadSpec).toolFunction(new FileReadTool()).build();
+
         // Register all tools
         toolsMap.put("find_files_by_name", byNameTool);
         toolsList.add(new ToolInfo("find_files_by_name", "Find Files by Name",
@@ -195,6 +235,18 @@ public class OllamaService {
         toolsMap.put("get_home_directory", getHomeDirTool);
         toolsList.add(new ToolInfo("get_home_directory", "Get Home Directory",
                 "Retrieve the absolute path to the user's home directory.", true));
+                
+        toolsMap.put("calculator", calcTool);
+        toolsList.add(new ToolInfo("calculator", "Calculator", "Evaluates a mathematical expression.", true));
+        
+        toolsMap.put("get_current_datetime", dateTimeTool);
+        toolsList.add(new ToolInfo("get_current_datetime", "Date & Time", "Gets the current system date and time.", true));
+        
+        toolsMap.put("get_weather", weatherTool);
+        toolsList.add(new ToolInfo("get_weather", "Weather", "Gets the current weather for a specified location.", true));
+        
+        toolsMap.put("read_file", fileReadTool);
+        toolsList.add(new ToolInfo("read_file", "Read File", "Reads the contents of a local file.", true));
     }
 
 
