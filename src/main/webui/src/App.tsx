@@ -48,27 +48,27 @@ function ToolCallAccordionCard({ tc }: ToolCallAccordionCardProps) {
   const result = tc.result;
 
   let statusIcon = '⏳';
-  let statusText = `invoking tool: ${toolName}`;
+  let statusText: React.ReactNode = <span>invoking tool: <code>{toolName}</code></span>;
   let statusClass = 'pending';
 
   if (status === 'running') {
     statusIcon = '⚙️';
-    statusText = `invoking tool: ${toolName}`;
+    statusText = <span>Invoking tool <code>{toolName}</code></span>;
     statusClass = 'running';
   } else if (status === 'success') {
     statusIcon = '✅';
-    statusText = `Tool: ${toolName} execution complete`;
+    statusText = <span>Tool <code>{toolName}</code> execution complete</span>;
     statusClass = 'success';
   } else if (status === 'error') {
     statusIcon = '❌';
-    statusText = `Tool: ${toolName} failed`;
+    statusText = <span>Tool <code>{toolName}</code> failed</span>;
     statusClass = 'error';
   }
 
   return (
     <div className={`tool-call-accordion-card ${statusClass}`}>
-      <div 
-        className="tool-call-accordion-header" 
+      <div
+        className="tool-call-accordion-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <span className={`tool-call-accordion-icon ${statusClass === 'running' ? 'spin' : ''}`}>
@@ -77,14 +77,14 @@ function ToolCallAccordionCard({ tc }: ToolCallAccordionCardProps) {
         <span className="tool-call-accordion-title">{statusText}</span>
         <span className="tool-call-accordion-arrow">{isExpanded ? '▲' : '▼'}</span>
       </div>
-      
+
       {isExpanded && (
         <div className="tool-call-accordion-body">
           <div className="tool-call-section">
             <div className="tool-call-section-title">Parameters</div>
             <pre className="tool-call-code">{JSON.stringify(toolArgs, null, 2)}</pre>
           </div>
-          
+
           {(status === 'running' || status === 'pending') && (
             <div className="tool-call-section">
               <div className="tool-call-section-title">Response</div>
@@ -95,7 +95,7 @@ function ToolCallAccordionCard({ tc }: ToolCallAccordionCardProps) {
               </div>
             </div>
           )}
-          
+
           {result && (
             <div className="tool-call-section">
               <div className="tool-call-section-title">Response</div>
@@ -136,7 +136,7 @@ function App() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const filteredModels = models.filter(m => 
+  const filteredModels = models.filter(m =>
     m.toLowerCase().includes(modelSearch.toLowerCase())
   );
 
@@ -214,10 +214,10 @@ function App() {
           const isObjectArray = data.length > 0 && typeof data[0] === 'object';
           const modelNames = isObjectArray ? data.map((m: any) => m.name) : data;
           const modelObjects = isObjectArray ? data : data.map((m: string) => ({ name: m }));
-          
+
           setModels(modelNames);
           setSettingsModels(modelObjects);
-          
+
           if (modelNames.length > 0) {
             modelNames.forEach((m: string) => fetchModelDetails(m));
             if (currentConversation && currentConversation.model) {
@@ -614,8 +614,8 @@ function App() {
             if (m.role === 'assistant' && m.tool_calls) {
               const updatedCalls = m.tool_calls.map(call => {
                 if ((call.function?.name ?? call.name) === toolName) {
-                  return { 
-                    ...call, 
+                  return {
+                    ...call,
                     status: toolSuccess ? 'success' : 'error',
                     result: resultContent
                   };
@@ -707,9 +707,9 @@ function App() {
         <div className="logo-container">
           <h2>Ollama4j UI</h2>
         </div>
-        
-        <button 
-          className="new-chat-btn" 
+
+        <button
+          className="new-chat-btn"
           onClick={startNewChat}
           disabled={!!(currentConversation && currentConversation.messages.length === 0)}
         >
@@ -720,15 +720,15 @@ function App() {
           <label>Recent Chats</label>
           <div className="conversations-list">
             {conversations.map(conv => (
-              <div 
-                key={conv.id} 
+              <div
+                key={conv.id}
                 className={`conversation-item ${conv.id === currentConversationId ? 'active' : ''}`}
                 onClick={() => navigateTo(`/chat/${conv.id}`)}
               >
                 <span className="chat-icon">💬</span>
                 <span className="chat-title" title={conv.title}>{conv.title}</span>
-                <button 
-                  className="delete-chat-btn" 
+                <button
+                  className="delete-chat-btn"
                   onClick={(e) => deleteConversation(conv.id, e)}
                   title="Delete chat"
                 >
@@ -748,7 +748,7 @@ function App() {
           ⚙️ Settings
         </button>
       </div>
-      
+
       {currentPath === '/settings' ? (
         <div className="settings-page">
           <div className="settings-header">
@@ -757,7 +757,7 @@ function App() {
               ← Back to Chat
             </button>
           </div>
-          
+
           <div className="settings-content-wrapper">
             <div className="settings-group">
               <div className="running-header-container">
@@ -765,19 +765,19 @@ function App() {
                 <div className={`live-indicator ${isServerReachable === true ? 'online' : isServerReachable === false ? 'offline' : 'checking'}`}>
                   {isServerReachable !== null && <span className={`ping-dot ${isServerReachable ? 'online' : 'offline'}`}></span>}
                   <span className="live-text">
-                    {isServerReachable === true 
-                      ? "Live" 
-                      : isServerReachable === false 
-                        ? "Not Reachable" 
+                    {isServerReachable === true
+                      ? "Live"
+                      : isServerReachable === false
+                        ? "Not Reachable"
                         : "Checking..."}
                   </span>
                 </div>
               </div>
               <div className="settings-input-group">
-                <input 
-                  type="text" 
-                  value={hostUrl} 
-                  onChange={e => setHostUrl(e.target.value)} 
+                <input
+                  type="text"
+                  value={hostUrl}
+                  onChange={e => setHostUrl(e.target.value)}
                   placeholder="http://localhost:11434"
                 />
                 <button className="save-button" onClick={saveSettings}>Save</button>
@@ -804,7 +804,7 @@ function App() {
                         </div>
                         <p className="tool-description">{t.description}</p>
                       </div>
-                      <button 
+                      <button
                         className={`toggle-tool-button ${t.enabled ? 'enabled' : 'disabled'}`}
                         onClick={() => toggleTool(t.name)}
                       >
@@ -826,17 +826,17 @@ function App() {
                     const modelName = m.name;
                     const dateStr = m.modifiedAt || m.modified_at;
                     const sizeBytes = m.size;
-                    
+
                     let dateDisplay = '';
                     if (dateStr) {
                       try {
                         const d = new Date(dateStr);
-                        dateDisplay = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        dateDisplay = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                       } catch (e) {
                         dateDisplay = dateStr;
                       }
                     }
-                    
+
                     let sizeDisplay = '';
                     if (sizeBytes) {
                       if (sizeBytes > 1024 * 1024 * 1024) {
@@ -926,7 +926,7 @@ function App() {
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {msg.content}
                           </ReactMarkdown>
-                          
+
                           {msg.tool_calls && msg.tool_calls.length > 0 && (
                             <div className="tool-calls-container">
                               {msg.tool_calls.map((tc, tcIndex) => (
@@ -935,29 +935,29 @@ function App() {
                             </div>
                           )}
                         </div>
-                      <div className="message-actions">
-                        {msg.role === 'assistant' && msg.tps !== undefined && (
-                          <span className="tps-indicator">
-                            ⚡ {msg.tps.toFixed(1)} tok/s
-                          </span>
-                        )}
-                        <button 
-                          className="copy-message-btn" 
-                          onClick={() => copyToClipboard(msg.content, i)}
-                          title="Copy message"
-                        >
-                          {copiedIndex === i ? (
-                            <Check className="copy-icon" size={16} />
-                          ) : (
-                            <Copy className="copy-icon" size={16} />
+                        <div className="message-actions">
+                          {msg.role === 'assistant' && msg.tps !== undefined && (
+                            <span className="tps-indicator">
+                              ⚡ {msg.tps.toFixed(1)} tok/s
+                            </span>
                           )}
-                        </button>
+                          <button
+                            className="copy-message-btn"
+                            onClick={() => copyToClipboard(msg.content, i)}
+                            title="Copy message"
+                          >
+                            {copiedIndex === i ? (
+                              <Check className="copy-icon" size={16} />
+                            ) : (
+                              <Copy className="copy-icon" size={16} />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -976,18 +976,18 @@ function App() {
           )}
 
           <div className="chat-input-container">
-            <input 
-              type="text" 
-              placeholder="Type a message..." 
+            <input
+              type="text"
+              placeholder="Type a message..."
               value={inputMessage}
               onChange={e => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isLoading || !selectedModel}
               className="chat-input"
             />
-            
+
             <div className="searchable-model-container" ref={dropdownRef}>
-              <button 
+              <button
                 type="button"
                 className="model-dropdown-trigger"
                 onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
@@ -998,10 +998,10 @@ function App() {
                 </span>
                 <span className="chevron-icon">▼</span>
               </button>
-              
+
               {isModelDropdownOpen && (
                 <div className="model-dropdown-menu">
-                  <input 
+                  <input
                     type="text"
                     placeholder="Search models..."
                     value={modelSearch}
@@ -1014,8 +1014,8 @@ function App() {
                       <div className="no-models-found">No models found</div>
                     ) : (
                       filteredModels.map(m => (
-                        <div 
-                          key={m} 
+                        <div
+                          key={m}
                           className={`model-option-item ${m === selectedModel ? 'active' : ''}`}
                           onClick={() => {
                             setSelectedModel(m);
@@ -1041,15 +1041,15 @@ function App() {
             </div>
 
             {isLoading ? (
-              <button 
-                onClick={stopResponseGeneration} 
+              <button
+                onClick={stopResponseGeneration}
                 className="stop-button"
               >
                 <span className="stop-icon">■</span> Stop
               </button>
             ) : (
-              <button 
-                onClick={sendMessage} 
+              <button
+                onClick={sendMessage}
                 disabled={!inputMessage.trim() || !selectedModel}
                 className="send-button"
               >
