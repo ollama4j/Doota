@@ -28,6 +28,18 @@ Find the latest release [here](https://github.com/ollama4j/ollama4j-ui/releases/
 java -jar /path/to/ollama4j-ui-<version>.jar
 ```
 
+#### Chat with model selection
+
+<p align="center">
+  <img width="1920" height="1080" alt="Doota Meaning" src="https://github.com/user-attachments/assets/46a6d913-79db-48b3-a1f8-753ffba9ae5c" />
+</p>
+
+#### Agentic conversation
+
+<p align="center">
+<img width="1080" height="608" alt="Doota Tool Call (2)" src="https://github.com/user-attachments/assets/f25381ba-1200-463d-8814-59710035be84" />
+</p>
+
 ## Features
 
 ### 🤖 Autonomous Agentic Chat Loop
@@ -69,10 +81,6 @@ java -jar /path/to/ollama4j-ui-<version>.jar
 * **Local Persistence**: Conversations are automatically persisted as JSON files under your home directory (`~/doota/chats`), preserving full multi-turn context.
 * **Premium Theme**: Modern dark-themed user interface styled with premium layouts and powered by smooth hover animations.
 * **Vibrant Details**: Clean Markdown rendering (with full GFM support), code highlighting, simple sidebar navigation, and quick copy-to-clipboard buttons.
-
-<p align="center">
-  <img width="845" alt="Chat using tools" src="https://github.com/user-attachments/assets/9b7cbfc0-dff1-402f-b60e-75fb9d62b41e" />
-</p>
 
 ## ⭐ Give us a Star!
 
