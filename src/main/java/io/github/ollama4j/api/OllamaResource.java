@@ -145,9 +145,8 @@ public class OllamaResource {
 
     @POST
     @Path("/chat/stream")
-    @Produces(MediaType.TEXT_PLAIN)
-    @RestStreamElementType(MediaType.TEXT_PLAIN)
-    public Multi<String> chatStream(ChatRequest req) {
+    @Produces("application/x-ndjson")
+    public Multi<java.util.Map<String, Object>> chatStream(ChatRequest req) {
         return Multi.createFrom().emitter(emitter -> {
             new Thread(() -> {
                 try {
@@ -185,6 +184,7 @@ public class OllamaResource {
                     OllamaChatRequest requestModel = OllamaChatRequest.builder()
                             .withModel(req.model)
                             .withMessages(history)
+                            .withStreaming()
                             .build();
 
                     List<Tools.Tool> enabledTools = ollamaService.getEnabledTools();
@@ -212,10 +212,10 @@ public class OllamaResource {
                         if (response != null && !response.isEmpty()) {
                             tokenCount[0]++;
                             try {
-                                java.util.Map<String, String> event = new java.util.HashMap<>();
+                                java.util.Map<String, Object> event = new java.util.HashMap<>();
                                 event.put("type", "text");
                                 event.put("content", response);
-                                emitter.emit(mapper.writeValueAsString(event) + "\n");
+                                emitter.emit(event);
                             } catch (Exception ex) {
                                 // ignore
                             }
@@ -236,7 +236,7 @@ public class OllamaResource {
                             tcs.add(tcMap);
                         }
                         event.put("toolCalls", tcs);
-                        emitter.emit(mapper.writeValueAsString(event) + "\n");
+                        emitter.emit(event);
                     }
 
                     // Emit done event with tokens-per-second
@@ -247,7 +247,7 @@ public class OllamaResource {
                         doneEvent.put("type", "done");
                         doneEvent.put("tps", Math.round(tps * 10.0) / 10.0);
                         try {
-                            emitter.emit(mapper.writeValueAsString(doneEvent) + "\n");
+                            emitter.emit(doneEvent);
                         } catch (Exception ex) {
                             // ignore
                         }

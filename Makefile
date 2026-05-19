@@ -1,4 +1,4 @@
-dev:
+dev: kill
 	@mvn quarkus:dev
 
 setup-dev:
