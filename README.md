@@ -1,7 +1,7 @@
 # Doota
 
 <p align="center">
-  <img src='https://raw.githubusercontent.com/ollama4j/ollama4j/65a9d526150da8fcd98e2af6a164f055572bf722/ollama4j.jpeg' width='100' alt="ollama4j-icon">
+  <img width="2000" height="2000" alt="doota-logo" src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4"  width="100"/>
 </p>
 
 <div align="center">
