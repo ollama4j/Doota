@@ -519,11 +519,17 @@ function App() {
     let latestConvSnapshot: Conversation | null = null;
 
     const updateConv = (msgs: ChatMessage[]) => {
+      if (latestConvSnapshot) {
+        latestConvSnapshot = { ...latestConvSnapshot, messages: msgs };
+      } else {
+        const currentConv = conversationsRef.current.find(c => c.id === conversationId);
+        if (currentConv) {
+          latestConvSnapshot = { ...currentConv, messages: msgs };
+        }
+      }
       setConversations(prev => prev.map(c => {
         if (c.id === conversationId) {
-          const updated = { ...c, messages: msgs };
-          latestConvSnapshot = updated;
-          return updated;
+          return { ...c, messages: msgs };
         }
         return c;
       }));
@@ -589,7 +595,7 @@ function App() {
                 // Live-update the streaming assistant bubble
                 workingMessages = [
                   ...workingMessages.slice(0, -1),
-                  { role: 'assistant', content: assistantText }
+                  { role: 'assistant', content: assistantText, tps: event.tps }
                 ];
                 updateConv(workingMessages);
               } else if (event.type === 'tool_call') {

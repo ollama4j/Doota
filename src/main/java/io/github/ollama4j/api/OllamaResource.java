@@ -215,6 +215,11 @@ public class OllamaResource {
                                 java.util.Map<String, Object> event = new java.util.HashMap<>();
                                 event.put("type", "text");
                                 event.put("content", response);
+                                long elapsedNs = System.nanoTime() - startNs;
+                                if (tokenCount[0] > 0 && elapsedNs > 0) {
+                                    double liveTps = tokenCount[0] * 1_000_000_000.0 / elapsedNs;
+                                    event.put("tps", Math.round(liveTps * 10.0) / 10.0);
+                                }
                                 emitter.emit(event);
                             } catch (Exception ex) {
                                 // ignore
