@@ -146,6 +146,7 @@ public class OllamaResource {
     @POST
     @Path("/chat/stream")
     @Produces(MediaType.TEXT_PLAIN)
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Multi<String> chatStream(ChatRequest req) {
         return Multi.createFrom().emitter(emitter -> {
             new Thread(() -> {
