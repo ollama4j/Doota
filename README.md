@@ -3,7 +3,7 @@
 </p>
 
 <div align="center">
-An agentic tool for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
+  An agentic system for Ollama with built-in tools and an autonomous agent loop to power your private AI ecosystem.
 </div>
 
 <div align="center">
