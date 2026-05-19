@@ -29,11 +29,46 @@ java -jar /path/to/ollama4j-ui-<version>.jar
 ```
 
 ## Features
-- Chat with models hosted on an Ollama server.
-- Chat with tools with tool-calling models such as [Mistral](https://ollama.com/library/mistral).
-- List downloaded models on Ollama server.
-- List available models on Ollama model repository.
-- View settings. Uses the `~/doota/settings.json` file for settings. (The file is created on startup if it does not exist)
+
+### 🤖 Autonomous Agentic Chat Loop
+* **Client-Driven Reasoning**: A fully autonomous agentic loop running directly in the browser (supporting up to 10 iterations per request).
+* **Dynamic Decision Making**: The LLM autonomously determines when to execute tools, sequences multiple tool calls dynamically, and compiles final answers.
+* **Live Status Diagnostics**: Visually track the step-by-step thinking process (e.g., "Thinking...", "Asking the model...", "Executing tool: x...").
+* **Performance Metrics**: Real-time generation statistics featuring live tokens-per-second (TPS) metrics.
+
+### 🔌 Interactive Tool Execution & Inspection
+* **Live Tool Status**: Status states with beautiful visual cues for Pending (⏳), Running (⚙️), Success (✅), and Error (❌) executions.
+* **Collapsible Details**: Accordion cards display parsed JSON arguments, execution time, and raw results for every tool invoked.
+* **Error Resilience**: Robust system-level and LLM-level error handling ensuring stable execution of sequential tool logic.
+
+### 🛠️ Built-in Agent Tools (Out-of-the-box)
+* **Filesystem & Search**:
+  * `find_files_by_name`: Recursively searches files across a chosen directory (defaults to home directory) using keyword/substring search.
+  * `find_files_by_extension`: Recursively locates files matching specific file formats (e.g., `.java`, `.pdf`, `.png`).
+  * `read_file`: Safe retrieval of text-based file contents.
+  * `get_home_directory`: Resolves the absolute path of the user's home directory.
+* **System Diagnostics & Environment**:
+  * `system_info`: Inspects system hardware details, including OS name/version, CPU cores, JVM memory capacity, and drive storage sizes.
+  * `platform_type`: Safely identifies the operating system family (`mac`, `windows`, or `linux`).
+* **General Utilities**:
+  * `calculator`: Safe mathematical expression evaluator supporting basic and complex arithmetic.
+  * `get_current_datetime`: Queries the real-time system date and time.
+  * `get_weather`: Location-based weather report function.
+
+### 📊 Advanced Model Management
+* **Search, Filter & Sort**: Easily query models via name, family, parameter size, or quantization level. Sort lists by name, file size, or modified date.
+* **Detailed Specifications**: Hover and view comprehensive metadata cards detailing model family (e.g., Llama, Mistral, Qwen), parameter sizes, and quantization.
+* **Memory Management**: Polls loaded models in real time; allows one-click unloading to release system RAM, or permanent deletion from disk.
+
+### ⚙️ Real-time Settings & Connection Diagnostics
+* **Custom Host URL**: Seamlessly configure custom Ollama URLs (e.g., `http://localhost:11434` or remote setups) in a dedicated settings view.
+* **Heartbeat & Polling**: Active background pings (every 3 seconds) verify host connection health and show a live server reachability status.
+* **Live Polling**: Programmatic loaded-model checks (every 1 second) keep the UI perfectly in sync with Ollama's active memory usage.
+
+### 💾 Local Chat Persistence & UX Polish
+* **Local Persistence**: Conversations are automatically persisted as JSON files under your home directory (`~/doota/chats`), preserving full multi-turn context.
+* **Premium Theme**: Modern dark-themed user interface styled with premium layouts and powered by smooth hover animations.
+* **Vibrant Details**: Clean Markdown rendering (with full GFM support), code highlighting, simple sidebar navigation, and quick copy-to-clipboard buttons.
 
 <p align="center">
   <img width="845" alt="Chat using tools" src="https://github.com/user-attachments/assets/9b7cbfc0-dff1-402f-b60e-75fb9d62b41e" />

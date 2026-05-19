@@ -344,7 +344,7 @@ public class OllamaResource {
             if (req == null || req.model == null || req.firstMessage == null) {
                 return Response.status(Response.Status.BAD_REQUEST).entity(java.util.Map.of("error", "model and firstMessage required")).build();
             }
-            String prompt = "You are a helpful assistant. Generate a very concise and punchy title (3-6 words maximum, without quotes, without conversational filler or colons) summarizing this user prompt: \"" + req.firstMessage + "\". Use Title Case (e.g. 'Understanding Quarkus' instead of 'UNDERSTANDING QUARKUS' or 'understanding quarkus'). Do NOT output in all capital letters/all-caps.";
+            String prompt = "You are a helpful assistant. Generate a very concise and clear title (15 words maximum, without quotes, without conversational filler or colons) summarizing this user prompt: \"" + req.firstMessage + "\".";
             
             io.github.ollama4j.models.generate.OllamaGenerateRequest request = io.github.ollama4j.models.generate.OllamaGenerateRequest.builder()
                 .withModel(req.model)
