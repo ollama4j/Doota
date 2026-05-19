@@ -547,7 +547,21 @@ function App() {
           body: JSON.stringify({ model, messages: historyForApi })
         });
 
-        if (!res.ok) throw new Error('The model returned ' + res.status);
+        if (!res.ok) {
+          let errorMsg = 'The model returned ' + res.status;
+          try {
+            const errorJson = await res.json();
+            if (errorJson && typeof errorJson === 'object') {
+              const details = errorJson.details || errorJson.message || '';
+              if (details.includes('does not support tools')) {
+                errorMsg = 'The model does not support tools. Try a different model.';
+              }
+            }
+          } catch (e) {
+            // ignore and fallback
+          }
+          throw new Error(errorMsg);
+        }
         if (!res.body) throw new Error('No response body');
 
         const reader = res.body.getReader();
