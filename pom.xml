@@ -6,8 +6,8 @@
     <groupId>io.github.ollama4j</groupId>
     <artifactId>ollama4j-ui</artifactId>
     <version>ollama4j-ui-revision</version>
-    <name>Ollama4j UI</name>
-    <description>Ollama4j UI</description>
+    <name>Doota</name>
+    <description>Doota</description>
 
     <properties>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>

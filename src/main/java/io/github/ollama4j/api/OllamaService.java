@@ -41,19 +41,24 @@ public class OllamaService {
 
     // ─── Filesystem layout ────────────────────────────────────────────────────
 
-    /** Root directory: ~/ollama4j-ui */
-    private File getOllama4jHome() {
+    /** Root directory: ~/doota */
+    private File getDootaHome() {
         String home = System.getProperty("user.home");
-        File dir = new File(home, "ollama4j-ui");
+        File dir = new File(home, "doota");
+        File oldDir = new File(home, "ollama4j-ui");
         if (!dir.exists()) {
-            dir.mkdirs();
+            if (oldDir.exists() && oldDir.isDirectory()) {
+                oldDir.renameTo(dir);
+            } else {
+                dir.mkdirs();
+            }
         }
         return dir;
     }
 
-    /** Chat storage directory: ~/ollama4j-ui/chats */
+    /** Chat storage directory: ~/doota/chats */
     private File getChatsDir() {
-        File dir = new File(getOllama4jHome(), "chats");
+        File dir = new File(getDootaHome(), "chats");
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -61,7 +66,7 @@ public class OllamaService {
     }
 
     private File getSettingsFile() {
-        return new File(getOllama4jHome(), "settings.json");
+        return new File(getDootaHome(), "settings.json");
     }
 
     private void loadSettings() {

@@ -2,7 +2,7 @@
   --primary: #10a37f;
   --primary-hover: #1a7f64;
   --bg-color: #343541;
-  --sidebar-bg: #202123;
+  --sidebar-bg: #171a1d;
   --text-color: #ececf1;
   --user-msg-bg: #343541;
   --assistant-msg-bg: #444654;
@@ -35,17 +35,75 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border-right: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid #171c1e;
   box-sizing: border-box;
 }
 
-.logo-container h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  background: linear-gradient(90deg, #10a37f, #41d3a5);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.logo-container:hover {
+  transform: scale(1.02);
+}
+
+.app-logo-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #171a1d;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  animation: ambientGlow 4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.app-logo {
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.app-wordmark {
+  height: 24px;
+  object-fit: contain;
+  opacity: 0.95;
+  transition: opacity 0.3s ease;
+}
+
+.logo-container:hover .app-logo-wrapper {
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(16, 163, 127, 0.4);
+}
+
+.logo-container:hover .app-wordmark {
+  opacity: 1;
+}
+
+@keyframes ambientGlow {
+  0% {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 4px rgba(16, 163, 127, 0.08);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 0 12px rgba(16, 163, 127, 0.25);
+    border-color: rgba(16, 163, 127, 0.2);
+  }
+  100% {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 4px rgba(16, 163, 127, 0.08);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .settings-section {

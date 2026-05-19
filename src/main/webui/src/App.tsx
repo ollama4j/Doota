@@ -826,8 +826,14 @@ function App() {
   return (
     <div className="app-container">
       <div className="sidebar">
-        <div className="logo-container">
-          <h2>Ollama4j UI</h2>
+        <div
+          className="logo-container"
+          title="Doota (written as dūta or ದೂತ/ದೂತ in Indian languages) primarily translates to messenger, envoy, ambassador, or emissary."
+        >
+          <div className="app-logo-wrapper">
+            <img src="/logo.png" alt="Doota Logo" className="app-logo" />
+          </div>
+          <img src="/wordmark.png" alt="Doota Wordmark" className="app-wordmark" />
         </div>
 
         <button
