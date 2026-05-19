@@ -136,6 +136,10 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [modelSearch, setModelSearch] = useState('');
+  const [toolsSearch, setToolsSearch] = useState('');
+  const [manageModelsSearch, setManageModelsSearch] = useState('');
+  const [modelFamilyFilter, setModelFamilyFilter] = useState('all');
+  const [modelSortOrder, setModelSortOrder] = useState('name-asc');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -143,6 +147,69 @@ function App() {
   const filteredModels = models.filter(m =>
     m.toLowerCase().includes(modelSearch.toLowerCase())
   );
+
+  const filteredTools = tools.filter(t =>
+    (t.displayName || t.name || '').toLowerCase().includes(toolsSearch.toLowerCase()) ||
+    (t.description || '').toLowerCase().includes(toolsSearch.toLowerCase())
+  );
+
+  // Extract unique model families dynamically from loaded model details
+  const uniqueFamilies = Array.from(
+    new Set(
+      settingsModels
+        .map(m => modelDetails[m.name]?.details?.family)
+        .filter(Boolean) as string[]
+    )
+  ).sort();
+
+  const processedSettingsModels = settingsModels
+    .filter(m => {
+      const query = manageModelsSearch.toLowerCase().trim();
+      if (!query) return true;
+
+      const details = modelDetails[m.name]?.details || {};
+      const family = (details.family || '').toLowerCase();
+      const params = (details.parameter_size || '').toLowerCase();
+      const quantization = (details.quantization_level || '').toLowerCase();
+      const name = m.name.toLowerCase();
+
+      return (
+        name.includes(query) ||
+        family.includes(query) ||
+        params.includes(query) ||
+        quantization.includes(query)
+      );
+    })
+    .filter(m => {
+      if (modelFamilyFilter === 'all') return true;
+      const family = modelDetails[m.name]?.details?.family;
+      return family === modelFamilyFilter;
+    })
+    .sort((a, b) => {
+      if (modelSortOrder === 'name-asc') {
+        return a.name.localeCompare(b.name);
+      }
+      if (modelSortOrder === 'name-desc') {
+        return b.name.localeCompare(a.name);
+      }
+      if (modelSortOrder === 'size-asc') {
+        return (a.size || 0) - (b.size || 0);
+      }
+      if (modelSortOrder === 'size-desc') {
+        return (b.size || 0) - (a.size || 0);
+      }
+      if (modelSortOrder === 'date-asc') {
+        const dateA = new Date(a.modifiedAt || a.modified_at || 0).getTime();
+        const dateB = new Date(b.modifiedAt || b.modified_at || 0).getTime();
+        return dateA - dateB;
+      }
+      if (modelSortOrder === 'date-desc') {
+        const dateA = new Date(a.modifiedAt || a.modified_at || 0).getTime();
+        const dateB = new Date(b.modifiedAt || b.modified_at || 0).getTime();
+        return dateB - dateA;
+      }
+      return 0;
+    });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -917,27 +984,35 @@ function App() {
               <div style={{ color: '#8e8ea0', fontSize: '0.85rem', marginBottom: '15px', lineHeight: '1.4' }}>
                 Enable or disable capabilities that the AI assistant can call to perform system actions on your computer.
               </div>
+              <div className="tools-search-container" style={{ marginBottom: '15px' }}>
+                <input
+                  type="text"
+                  placeholder="Search tools by name or description..."
+                  value={toolsSearch}
+                  onChange={e => setToolsSearch(e.target.value)}
+                  className="tools-search-input"
+                />
+              </div>
               <div className="tools-list">
-                {tools.length === 0 ? (
-                  <div style={{ color: '#8e8ea0', padding: '10px' }}>No tools registered.</div>
+                {filteredTools.length === 0 ? (
+                  <div style={{ color: '#8e8ea0', padding: '10px' }}>
+                    {tools.length === 0 ? "No tools registered." : "No tools match your search criteria."}
+                  </div>
                 ) : (
-                  tools.map(t => (
+                  filteredTools.map(t => (
                     <div className="tool-item" key={t.name}>
                       <div className="tool-info-container">
                         <div className="tool-name-row">
                           <span className="tool-name">{t.displayName}</span>
-                          <span className={`tool-status-badge ${t.enabled ? 'enabled' : 'disabled'}`}>
-                            {t.enabled ? 'Active' : 'Inactive'}
-                          </span>
+                          <button
+                            className={`toggle-tool-button ${t.enabled ? 'enabled' : 'disabled'}`}
+                            onClick={() => toggleTool(t.name)}
+                          >
+                            {t.enabled ? 'Disable' : 'Enable'}
+                          </button>
                         </div>
                         <p className="tool-description">{t.description}</p>
                       </div>
-                      <button
-                        className={`toggle-tool-button ${t.enabled ? 'enabled' : 'disabled'}`}
-                        onClick={() => toggleTool(t.name)}
-                      >
-                        {t.enabled ? 'Disable' : 'Enable'}
-                      </button>
                     </div>
                   ))
                 )}
@@ -946,11 +1021,55 @@ function App() {
 
             <div className="settings-group">
               <label>Manage Models</label>
-              <div className="model-list">
-                {settingsModels.length === 0 ? (
-                  <div style={{ color: '#8e8ea0', padding: '10px' }}>No models found.</div>
+              <div style={{ color: '#8e8ea0', fontSize: '0.85rem', marginBottom: '15px', lineHeight: '1.4' }}>
+                View, filter, sort, and delete local Ollama models currently downloaded on your host.
+              </div>
+
+              {/* Models Search & Filter Controls */}
+              <div className="models-controls-panel">
+                <div className="models-search-wrapper">
+                  <input
+                    type="text"
+                    placeholder="Search models by name, family, parameter size..."
+                    value={manageModelsSearch}
+                    onChange={e => setManageModelsSearch(e.target.value)}
+                    className="models-search-input"
+                  />
+                </div>
+                <div className="models-filters-wrapper">
+                  <select
+                    value={modelFamilyFilter}
+                    onChange={e => setModelFamilyFilter(e.target.value)}
+                    className="models-select-filter"
+                  >
+                    <option value="all">All Families</option>
+                    {uniqueFamilies.map(fam => (
+                      <option key={fam} value={fam}>{fam.toUpperCase()}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={modelSortOrder}
+                    onChange={e => setModelSortOrder(e.target.value)}
+                    className="models-select-filter"
+                  >
+                    <option value="name-asc">Sort: Name (A-Z)</option>
+                    <option value="name-desc">Sort: Name (Z-A)</option>
+                    <option value="size-asc">Sort: Size (Smallest)</option>
+                    <option value="size-desc">Sort: Size (Largest)</option>
+                    <option value="date-desc">Sort: Recently Modified</option>
+                    <option value="date-asc">Sort: Oldest Modified</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="models-grid">
+                {processedSettingsModels.length === 0 ? (
+                  <div style={{ color: '#8e8ea0', padding: '10px 10px 20px', gridColumn: '1 / -1', textAlign: 'center' }}>
+                    {settingsModels.length === 0 ? "No models found." : "No models match your search or filter criteria."}
+                  </div>
                 ) : (
-                  settingsModels.map(m => {
+                  processedSettingsModels.map(m => {
                     const modelName = m.name;
                     const dateStr = m.modifiedAt || m.modified_at;
                     const sizeBytes = m.size;
@@ -975,23 +1094,33 @@ function App() {
                     }
 
                     return (
-                      <div className="model-item" key={modelName}>
-                        <div className="model-info-container">
-                          <span className="model-name">{modelName}</span>
-                          <div className="model-meta-container" style={{ fontSize: '0.8rem', color: '#8e8ea0', marginTop: '4px', marginBottom: '8px' }}>
-                            {dateDisplay && <span style={{ marginRight: '15px' }}>🕒 {dateDisplay}</span>}
-                            {sizeDisplay && <span>📦 {sizeDisplay}</span>}
+                      <div className="model-card" key={modelName}>
+                        <div className="model-card-info">
+                          <div className="model-card-header-row">
+                            <span className="model-card-name" title={modelName}>{modelName}</span>
+                            <button className="model-card-delete-btn" onClick={() => deleteModel(modelName)}>Delete</button>
+                          </div>
+                          <div className="model-card-meta">
+                            {sizeDisplay && <span className="model-card-meta-item">📦 {sizeDisplay}</span>}
+                            {dateDisplay && <span className="model-card-meta-item">🕒 {dateDisplay}</span>}
                           </div>
                           {modelDetails[modelName] && (
                             <div className="model-details-badge-container">
-                              {modelDetails[modelName].details?.family && <span className="model-badge family">Family: {modelDetails[modelName].details.family}</span>}
-                              {modelDetails[modelName].details?.parameter_size && <span className="model-badge params">Params: {modelDetails[modelName].details.parameter_size}</span>}
-                              {modelDetails[modelName].details?.quantization_level && <span className="model-badge quantization">Quantization: {modelDetails[modelName].details.quantization_level}</span>}
-                              {modelDetails[modelName].details?.format && <span className="model-badge format">Format: {modelDetails[modelName].details.format}</span>}
+                              {modelDetails[modelName].details?.family && (
+                                <span className="model-badge family">Family: {modelDetails[modelName].details.family}</span>
+                              )}
+                              {modelDetails[modelName].details?.parameter_size && (
+                                <span className="model-badge params">Params: {modelDetails[modelName].details.parameter_size}</span>
+                              )}
+                              {modelDetails[modelName].details?.quantization_level && (
+                                <span className="model-badge quantization">Quant: {modelDetails[modelName].details.quantization_level}</span>
+                              )}
+                              {modelDetails[modelName].details?.format && (
+                                <span className="model-badge format">Format: {modelDetails[modelName].details.format}</span>
+                              )}
                             </div>
                           )}
                         </div>
-                        <button className="delete-button" onClick={() => deleteModel(modelName)}>Delete</button>
                       </div>
                     );
                   })
