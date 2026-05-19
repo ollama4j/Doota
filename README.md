@@ -3,7 +3,7 @@
 </p>
 
 <div align="center">
-An agentic UI for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
+An agentic tool for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
 </div>
 
 <div align="center">
