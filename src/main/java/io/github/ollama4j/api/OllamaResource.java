@@ -157,7 +157,7 @@ public class OllamaResource {
                         for (ChatRequest.Message m : req.messages) {
                             OllamaChatMessageRole role;
                             try {
-                                role = OllamaChatMessageRole.getRole(m.role.toUpperCase());
+                                role = OllamaChatMessageRole.getRole(m.role.toLowerCase());
                             } catch(Exception e) {
                                 role = OllamaChatMessageRole.USER;
                             }
@@ -233,6 +233,8 @@ public class OllamaResource {
                             funcMap.put("name", tc.getFunction().getName());
                             funcMap.put("arguments", tc.getFunction().getArguments());
                             tcMap.put("function", funcMap);
+                            tcMap.put("id", tc.getId());
+                            tcMap.put("type", "function");
                             tcs.add(tcMap);
                         }
                         event.put("toolCalls", tcs);
