@@ -1,4 +1,7 @@
-dev:
+dev: kill
+	@mvn quarkus:dev
+
+setup-dev:
 	@echo "Setting up dev environment..."
 	@command -v pre-commit >/dev/null 2>&1 || { echo "Error: pre-commit is not installed. Please install it first."; exit 1; }
 	@command -v docker >/dev/null 2>&1 || { echo "Error: docker is not installed. Please install it first."; exit 1; }
@@ -7,10 +10,10 @@ dev:
 	pre-commit install --install-hooks
 
 build:
-	mvn -B clean install package -Dgpg.skip=true
+	@mvn -B clean package -DskipTests
 
-full-build:
-	mvn -B clean install package
+kill:
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null
 
-start: build
-	java -jar target/ollama4j-ui-*.jar
+start: kill build
+	@java -jar target/*-runner.jar
