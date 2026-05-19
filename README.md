@@ -29,13 +29,13 @@ java -jar /path/to/ollama4j-ui-<version>.jar
 #### Chat with model selection
 
 <p align="center">
-  <img width="1920" height="1080" alt="Doota Meaning" src="https://github.com/user-attachments/assets/46a6d913-79db-48b3-a1f8-753ffba9ae5c" />
+  <img width="1920" height="1080" alt="Doota - Meaning" src="https://github.com/user-attachments/assets/46a6d913-79db-48b3-a1f8-753ffba9ae5c" />
 </p>
 
 #### Agentic conversation
 
 <p align="center">
-<img width="1080" height="608" alt="Doota Tool Call (2)" src="https://github.com/user-attachments/assets/f25381ba-1200-463d-8814-59710035be84" />
+<img width="1080" height="608" alt="Doota - Agent" src="https://github.com/user-attachments/assets/f25381ba-1200-463d-8814-59710035be84" />
 </p>
 
 ## Features
@@ -79,6 +79,15 @@ java -jar /path/to/ollama4j-ui-<version>.jar
 * **Local Persistence**: Conversations are automatically persisted as JSON files under your home directory (`~/doota/chats`), preserving full multi-turn context.
 * **Premium Theme**: Modern dark-themed user interface styled with premium layouts and powered by smooth hover animations.
 * **Vibrant Details**: Clean Markdown rendering (with full GFM support), code highlighting, simple sidebar navigation, and quick copy-to-clipboard buttons.
+
+<p align="center">
+  <img width="3780" height="1890" alt="Untitled design (6)" src="https://github.com/user-attachments/assets/77a39875-4692-444c-a066-d3c590f667fd" />
+  <img width="3780" height="1890" alt="Untitled design (5)" src="https://github.com/user-attachments/assets/3d11553d-bacf-4b83-811e-faf8d55599b1" />
+  <img width="3780" height="1890" alt="Untitled design (4)" src="https://github.com/user-attachments/assets/328a3fdb-43a0-420d-b4c7-1c261863e2f8" />
+  <img width="3780" height="1890" alt="Untitled design (3)" src="https://github.com/user-attachments/assets/89802742-881f-4d35-a78d-d1c6caa00e94" />
+  <img width="3780" height="1890" alt="Untitled design (2)" src="https://github.com/user-attachments/assets/236abf5b-d385-4382-9527-50c65f9cc9ed" />
+  <img width="3780" height="1890" alt="Untitled design (1)" src="https://github.com/user-attachments/assets/8f2a784b-8334-4abf-a007-70a028b0b524" />
+</p>
 
 ## ⭐ Give us a Star!
 
