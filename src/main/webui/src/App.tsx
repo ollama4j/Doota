@@ -112,10 +112,14 @@ function App() {
   const [models, setModels] = useState<string[]>([]);
   const [tools, setTools] = useState<ToolInfoDTO[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [conversations, setConversations] = useState<Conversation[]>(() => {
-    const saved = localStorage.getItem('ollama4j_conversations');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isConversationsLoaded, setIsConversationsLoaded] = useState(false);
+  const conversationsRef = useRef<Conversation[]>([]);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [inputMessage, setInputMessage] = useState('');
@@ -152,6 +156,21 @@ function App() {
 
   const currentConversation = conversations.find(c => c.id === currentConversationId);
   const messages = currentConversation ? currentConversation.messages : [];
+
+  // ─── Server-side conversation persistence helpers ─────────────────────────
+
+  const saveConversationToServer = (conv: Conversation) => {
+    fetch(`/api/chats/${conv.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(conv)
+    }).catch(err => console.error('Failed to save conversation', err));
+  };
+
+  const deleteConversationFromServer = (id: string) => {
+    fetch(`/api/chats/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('Failed to delete conversation', err));
+  };
 
   const fetchTools = () => {
     fetch('/api/settings/tools')
@@ -245,9 +264,28 @@ function App() {
     fetchModels();
   }, []);
 
+  // Load conversations from server on mount
   useEffect(() => {
-    localStorage.setItem('ollama4j_conversations', JSON.stringify(conversations));
-  }, [conversations]);
+    fetch('/api/chats')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load chats');
+        return res.json();
+      })
+      .then((serverData: Conversation[]) => {
+        // Merge: server is source of truth; keep any local-only convs
+        // not yet persisted (e.g. a brand-new chat created before server responded)
+        setConversations(prev => {
+          const serverMap = new Map(serverData.map(c => [c.id, c]));
+          const localOnly = prev.filter(c => !serverMap.has(c.id));
+          return [...serverData, ...localOnly];
+        });
+        setIsConversationsLoaded(true);
+      })
+      .catch(err => {
+        console.error('Failed to load conversations from server', err);
+        setIsConversationsLoaded(true); // fall back to local flow even on error
+      });
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -263,6 +301,8 @@ function App() {
   };
 
   useEffect(() => {
+    if (!isConversationsLoaded) return;
+
     if (currentPath === '/settings') {
       fetch('/api/settings/host')
         .then(res => res.text())
@@ -274,7 +314,7 @@ function App() {
       fetchTools();
     } else if (currentPath.startsWith('/chat/')) {
       const uuid = currentPath.substring(6);
-      const existing = conversations.find(c => c.id === uuid);
+      const existing = conversationsRef.current.find(c => c.id === uuid);
       if (existing) {
         setCurrentConversationId(uuid);
         if (existing.model) {
@@ -287,18 +327,22 @@ function App() {
           messages: [],
           model: selectedModel || models[0] || '',
         };
-        setConversations(prev => [newConv, ...prev]);
+        setConversations(prev => {
+          if (prev.some(c => c.id === uuid)) return prev;
+          return [newConv, ...prev];
+        });
         setCurrentConversationId(uuid);
+        saveConversationToServer(newConv);
       }
     } else {
-      if (conversations.length > 0) {
-        navigateTo(`/chat/${conversations[0].id}`);
+      if (conversationsRef.current.length > 0) {
+        navigateTo(`/chat/${conversationsRef.current[0].id}`);
       } else {
         const newUuid = crypto.randomUUID();
         navigateTo(`/chat/${newUuid}`);
       }
     }
-  }, [currentPath]);
+  }, [currentPath, isConversationsLoaded]);
 
   useEffect(() => {
     if (currentPath !== '/settings') return;
@@ -336,6 +380,7 @@ function App() {
     const id = chatToDelete;
     const updated = conversations.filter(c => c.id !== id);
     setConversations(updated);
+    deleteConversationFromServer(id);
 
     if (id === currentConversationId) {
       if (updated.length > 0) {
@@ -471,10 +516,17 @@ function App() {
     // The last element is always the current (streaming) assistant bubble.
     let workingMessages = [...initialHistory];
 
+    let latestConvSnapshot: Conversation | null = null;
+
     const updateConv = (msgs: ChatMessage[]) => {
-      setConversations(prev => prev.map(c =>
-        c.id === conversationId ? { ...c, messages: msgs } : c
-      ));
+      setConversations(prev => prev.map(c => {
+        if (c.id === conversationId) {
+          const updated = { ...c, messages: msgs };
+          latestConvSnapshot = updated;
+          return updated;
+        }
+        return c;
+      }));
     };
 
     try {
@@ -659,6 +711,49 @@ function App() {
       setIsLoading(false);
       setAgentStatus('');
       setAgentIteration(0);
+      // Persist the final state of the conversation to the server
+      if (latestConvSnapshot) {
+        saveConversationToServer(latestConvSnapshot);
+
+        const snapshot = latestConvSnapshot as Conversation;
+        const userMsgs = snapshot.messages.filter(m => m.role === 'user');
+        const firstUserMsg = userMsgs[0];
+        
+        const isDefaultOrTempTitle = 
+          snapshot.title === 'New Chat' || 
+          (firstUserMsg && (
+            snapshot.title === firstUserMsg.content || 
+            snapshot.title === (firstUserMsg.content.length > 35 ? firstUserMsg.content.substring(0, 35) + '...' : firstUserMsg.content)
+          ));
+
+        if (isDefaultOrTempTitle && userMsgs.length === 1 && snapshot.messages.length >= 2) {
+          if (firstUserMsg && firstUserMsg.content) {
+            fetch(`/api/chats/${conversationId}/generate-title`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: snapshot.model,
+                firstMessage: firstUserMsg.content
+              })
+            })
+              .then(res => {
+                if (!res.ok) throw new Error('Title generation failed');
+                return res.json();
+              })
+              .then(data => {
+                if (data.title) {
+                  setConversations(prev => prev.map(c => {
+                    if (c.id === conversationId) {
+                      return { ...c, title: data.title };
+                    }
+                    return c;
+                  }));
+                }
+              })
+              .catch(err => console.error('Failed to generate title', err));
+          }
+        }
+      }
     }
   }, []);
 
@@ -671,6 +766,7 @@ function App() {
     abortControllerRef.current = new AbortController();
 
     let currentHistory: ChatMessage[] = [];
+    let snapshotConv: Conversation | null = null;
     const convId = currentConversationId;
     const model = selectedModel;
 
@@ -682,13 +778,19 @@ function App() {
           { role: 'assistant', content: '' }  // placeholder bubble for streaming
         ];
         const title = c.title === 'New Chat'
-          ? (userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage)
+          ? (userMessage.length > 35 ? userMessage.substring(0, 35) + '...' : userMessage)
           : c.title;
         currentHistory = updatedMessages;
-        return { ...c, messages: updatedMessages, title, model };
+        snapshotConv = { ...c, messages: updatedMessages, title, model };
+        return snapshotConv;
       }
       return c;
     }));
+
+    // Persist user message immediately so it isn't lost on refresh
+    if (snapshotConv) {
+      saveConversationToServer(snapshotConv);
+    }
 
     setTimeout(() => {
       runAgentLoop(currentHistory, convId, model);
@@ -936,7 +1038,7 @@ function App() {
                           )}
                         </div>
                         <div className="message-actions">
-                          {msg.role === 'assistant' && msg.tps !== undefined && (
+                          {msg.role === 'assistant' && msg.tps != null && (
                             <span className="tps-indicator">
                               ⚡ {msg.tps.toFixed(1)} tok/s
                             </span>

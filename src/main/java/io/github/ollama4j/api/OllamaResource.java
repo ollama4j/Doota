@@ -281,5 +281,111 @@ public class OllamaResource {
             return Response.serverError().entity(java.util.Map.of("error", e.getMessage())).build();
         }
     }
+
+    // ─── Chat persistence endpoints ───────────────────────────────────────────
+
+    @GET
+    @Path("/chats")
+    public List<ConversationDTO> listChats() {
+        return ollamaService.listConversations();
+    }
+
+    @GET
+    @Path("/chats/{id}")
+    public Response getChat(@PathParam("id") String id) {
+        ConversationDTO dto = ollamaService.getConversation(id);
+        if (dto == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(dto).build();
+    }
+
+    @POST
+    @Path("/chats/{id}")
+    public Response saveChat(@PathParam("id") String id, ConversationDTO dto) {
+        try {
+            if (dto == null) {
+                return Response.status(Response.Status.BAD_REQUEST).entity(java.util.Map.of("error", "Body required")).build();
+            }
+            // Ensure the id in the path matches the body
+            dto.id = id;
+            ollamaService.saveConversation(dto);
+            return Response.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity(java.util.Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    @DELETE
+    @Path("/chats/{id}")
+    public Response deleteChat(@PathParam("id") String id) {
+        boolean deleted = ollamaService.deleteConversation(id);
+        if (deleted) {
+            return Response.ok().build();
+        }
+        return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    public static class TitleRequestDTO {
+        public String model;
+        public String firstMessage;
+    }
+
+    @POST
+    @Path("/chats/{id}/generate-title")
+    public Response generateTitle(@PathParam("id") String id, TitleRequestDTO req) {
+        try {
+            if (req == null || req.model == null || req.firstMessage == null) {
+                return Response.status(Response.Status.BAD_REQUEST).entity(java.util.Map.of("error", "model and firstMessage required")).build();
+            }
+            String prompt = "You are a helpful assistant. Generate a very concise and punchy title (3-6 words maximum, without quotes, without conversational filler or colons) summarizing this user prompt: \"" + req.firstMessage + "\". Use Title Case (e.g. 'Understanding Quarkus' instead of 'UNDERSTANDING QUARKUS' or 'understanding quarkus'). Do NOT output in all capital letters/all-caps.";
+            
+            io.github.ollama4j.models.generate.OllamaGenerateRequest request = io.github.ollama4j.models.generate.OllamaGenerateRequest.builder()
+                .withModel(req.model)
+                .withPrompt(prompt)
+                .build();
+            
+            io.github.ollama4j.models.response.OllamaResult result = ollamaService.getClient().generate(request, null);
+            String title = result.getResponse().trim();
+            // clean up surrounding quotes if any
+            if (title.startsWith("\"") && title.endsWith("\"")) {
+                title = title.substring(1, title.length() - 1);
+            }
+            if (title.startsWith("'") && title.endsWith("'")) {
+                title = title.substring(1, title.length() - 1);
+            }
+            title = title.trim();
+
+            // Programmatic fallback: if the model ignored instructions and outputted strictly all-caps,
+            // convert it to a beautiful Title Case.
+            if (title.length() > 0 && title.equals(title.toUpperCase())) {
+                StringBuilder sb = new StringBuilder();
+                boolean nextTitleCase = true;
+                for (char c : title.toLowerCase().toCharArray()) {
+                    if (Character.isWhitespace(c) || c == '-' || c == '_') {
+                        nextTitleCase = true;
+                    } else if (nextTitleCase) {
+                        c = Character.toUpperCase(c);
+                        nextTitleCase = false;
+                    }
+                    sb.append(c);
+                }
+                title = sb.toString();
+            }
+            
+            // Also, update the title on the server's persisted JSON file!
+            ConversationDTO dto = ollamaService.getConversation(id);
+            if (dto != null) {
+                dto.title = title;
+                ollamaService.saveConversation(dto);
+            }
+            
+            return Response.ok(java.util.Map.of("title", title)).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity(java.util.Map.of("error", e.getMessage())).build();
+        }
+    }
 }
 

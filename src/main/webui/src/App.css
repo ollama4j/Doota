@@ -728,6 +728,13 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   color: #ececf1;
+  transition: all 0.2s ease;
+}
+
+.conversation-item:hover .chat-title {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .delete-chat-btn {

@@ -39,13 +39,29 @@ public class OllamaService {
         initTools();
     }
 
-    private File getSettingsFile() {
+    // ─── Filesystem layout ────────────────────────────────────────────────────
+
+    /** Root directory: ~/ollama4j-ui */
+    private File getOllama4jHome() {
         String home = System.getProperty("user.home");
         File dir = new File(home, "ollama4j-ui");
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        return new File(dir, "settings.json");
+        return dir;
+    }
+
+    /** Chat storage directory: ~/ollama4j-ui/chats */
+    private File getChatsDir() {
+        File dir = new File(getOllama4jHome(), "chats");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir;
+    }
+
+    private File getSettingsFile() {
+        return new File(getOllama4jHome(), "settings.json");
     }
 
     private void loadSettings() {
@@ -306,6 +322,52 @@ public class OllamaService {
 
     public void deleteModel(String modelName) throws Exception {
         ollama.deleteModel(modelName, true);
+    }
+
+    // ─── Chat persistence ─────────────────────────────────────────────────────
+
+    /** Returns all conversations sorted newest-first (by file last-modified). */
+    public List<ConversationDTO> listConversations() {
+        File dir = getChatsDir();
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        List<ConversationDTO> result = new ArrayList<>();
+        if (files == null) return result;
+        // sort newest first
+        java.util.Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+        for (File f : files) {
+            if (f.length() == 0) continue; // skip empty/incomplete files
+            try {
+                ConversationDTO dto = mapper.readValue(f, ConversationDTO.class);
+                result.add(dto);
+            } catch (IOException e) {
+                System.err.println("Skipping corrupt chat file: " + f.getName() + " — " + e.getMessage());
+            }
+        }
+        return result;
+    }
+
+    /** Reads a single conversation by id, or null if not found. */
+    public ConversationDTO getConversation(String id) {
+        File f = new File(getChatsDir(), id + ".json");
+        if (!f.exists()) return null;
+        try {
+            return mapper.readValue(f, ConversationDTO.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /** Creates or overwrites the conversation file for the given DTO. */
+    public void saveConversation(ConversationDTO dto) throws IOException {
+        File f = new File(getChatsDir(), dto.id + ".json");
+        mapper.writerWithDefaultPrettyPrinter().writeValue(f, dto);
+    }
+
+    /** Deletes the conversation file. Returns true if the file existed. */
+    public boolean deleteConversation(String id) {
+        File f = new File(getChatsDir(), id + ".json");
+        return f.exists() && f.delete();
     }
 }
 
