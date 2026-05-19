@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.ollama4j</groupId>
-    <artifactId>ollama4j-ui</artifactId>
-    <version>ollama4j-ui-revision</version>
+    <artifactId>doota</artifactId>
+    <version>doota-revision</version>
     <name>Doota</name>
     <description>Doota</description>
 

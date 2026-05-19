@@ -7,7 +7,7 @@ An agentic UI for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
 </div>
 
 <div align="center">
-  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/ollama4j/ollama4j-ui">
+  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/ollama4j/doota">
 </div>
 
 ## Requirements
@@ -20,10 +20,10 @@ An agentic UI for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
 ## Download and Run
 
 
-Find the latest release [here](https://github.com/ollama4j/ollama4j-ui/releases/latest) and download the `.jar` file. Then, run the following command:
+Find the latest release [here](https://github.com/ollama4j/doota/releases/latest) and download the `.jar` file. Then, run the following command:
 
 ```bash
-java -jar /path/to/ollama4j-ui-<version>.jar
+java -jar /path/to/doota-<version>-runner.jar
 ```
 
 #### Chat with model selection
