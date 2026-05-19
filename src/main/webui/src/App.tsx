@@ -532,7 +532,7 @@ function App() {
     try {
       for (let iteration = 0; iteration < MAX_AGENT_ITERATIONS; iteration++) {
         setAgentIteration(iteration + 1);
-        setAgentStatus(`Iteration ${iteration + 1} — asking the model...`);
+        setAgentStatus(`Asking the model...`);
 
         // Build message list for the API (exclude the trailing empty assistant bubble)
         const historyForApi = workingMessages
@@ -547,7 +547,7 @@ function App() {
           body: JSON.stringify({ model, messages: historyForApi })
         });
 
-        if (!res.ok) throw new Error('LLM stream returned ' + res.status);
+        if (!res.ok) throw new Error('The model returned ' + res.status);
         if (!res.body) throw new Error('No response body');
 
         const reader = res.body.getReader();
