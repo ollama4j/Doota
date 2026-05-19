@@ -1,11 +1,11 @@
 # Doota
 
 <p align="center">
-  <img width="2000" height="2000" alt="doota-logo" src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4"  width="100"/>
+  <img width="2000" height="2000" alt="doota-logo" src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4"  width="30"/>
 </p>
 
 <div align="center">
-A modern web interface for Ollama, built with React, TypeScript, and Quarkus.
+An agentic UI for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
 </div>
 
 <div align="center">
@@ -37,9 +37,6 @@ java -jar /path/to/ollama4j-ui-<version>.jar
 
 <p align="center">
   <img width="845" alt="Chat using tools" src="https://github.com/user-attachments/assets/9b7cbfc0-dff1-402f-b60e-75fb9d62b41e" />
-  <img width="765" alt="Chat" src="https://github.com/user-attachments/assets/540ba735-5465-46dd-8138-8ffcaa4335be" />
-  <img width="767" alt="List downloaded models" src="https://github.com/user-attachments/assets/75f9c864-784a-4f75-ad50-9e2ecb014e50" />
-  <img width="733" alt="List models available for download" src="https://github.com/user-attachments/assets/81db35b0-eb25-4a73-a6c3-e50d2be803c4" />
 </p>
 
 ## ⭐ Give us a Star!
