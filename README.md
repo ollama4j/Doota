@@ -13,7 +13,7 @@ An agentic UI for Ollama. Built with Ollama4J, Quarkus, React and TypeScript.
 ## Requirements
 
 <a href="https://ollama.com/" target="_blank">
-  <img src="https://img.shields.io/badge/Java-11_+-green.svg?style=for-the-badge&labelColor=gray&label=Java&color=orange" alt=""/>
+  <img src="https://img.shields.io/badge/Java-17_+-green.svg?style=for-the-badge&labelColor=gray&label=Java&color=orange" alt=""/>
   <img src="https://img.shields.io/badge/v0.6.2+-green.svg?style=for-the-badge&labelColor=gray&label=Ollama&color=blue" alt=""/>
 </a>
 
