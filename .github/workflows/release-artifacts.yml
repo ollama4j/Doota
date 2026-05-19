@@ -24,32 +24,25 @@ jobs:
       repository-projects: write
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
-    - name: Find and Replace
-      uses: jacobtomlinson/gha-find-replace@v3
-      with:
-        find: "ollama4j-ui-revision"
-        replace: ${{ github.ref_name }}
-        regex: false
-
-    - name: Set env
-      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+    - name: Set project version
+      run: mvn -B versions:set -DnewVersion=${{ github.ref_name }} -DgenerateBackupPoms=false
 
     - name: Build with Maven
-      run: mvn -B -Drevision=${{ env.RELEASE_VERSION }} clean package --file pom.xml -Pproduction
+      run: mvn -B clean package
 
     - name: Release Assets
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: target/ollama4j-ui-*.jar
+        files: target/*-runner.jar
