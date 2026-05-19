@@ -1,9 +1,25 @@
 <p align="center">
-  <img alt="doota-logo" src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4" width="250"/>
+  <img 
+    alt="doota-logo" 
+    src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4" 
+    width="250"
+  />
+</p>
+
+<p align="center">
+  <small>
+    <sub>
+      <strong>Doota</strong> (pronounced <em>Dhoo-tha</em> / <em>Dhūta</em> / <em>Dhootha</em>) 
+      comes from the Sanskrit and Kannada word 
+      <strong>दूत / ದೂತ</strong>, meaning 
+      <em>messenger</em>, <em>envoy</em>, or <em>agent</em> — someone that carries 
+      information, executes tasks, and acts on behalf of another.
+    </sub>
+  </small>
 </p>
 
 <div align="center">
-  An agentic system for Ollama with built-in tools and an autonomous agent loop to power your private AI ecosystem.
+  Doota is agentic system for Ollama with built-in tools and an autonomous agent loop to power your private AI ecosystem.
 </div>
 
 <div align="center">
