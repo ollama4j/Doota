@@ -75,7 +75,7 @@ export default function App() {
       <nav>
         <div className="nav-inner">
           <a href="#" className="nav-logo">
-            <img src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4" alt="Doota Logo" />
+            <img src="/logo.png" alt="Doota Logo" />
             <div className="nav-logo-text">
               <span>Doota</span>
             </div>
