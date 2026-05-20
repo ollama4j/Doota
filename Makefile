@@ -20,6 +20,7 @@ start: kill build
 
 build-docs:
 	@echo "Building docs artifacts..."
+	cd docs && [ -d node_modules ] || npm install
 	cd docs && npm run build
 
 clean-docs:
@@ -28,4 +29,5 @@ clean-docs:
 
 docs-serve:
 	@echo "Starting docs development server..."
+	cd docs && [ -d node_modules ] || npm install
 	cd docs && npm run dev
