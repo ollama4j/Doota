@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * DTO representing a persisted conversation (chat session).
- * Stored as ~/ollama4j-ui/chats/<id>.json on the filesystem.
+ * Stored as ~/doota/chats/<id>.json on the filesystem.
  */
 public class ConversationDTO {
     public String id;

@@ -45,13 +45,8 @@ public class OllamaService {
     private File getDootaHome() {
         String home = System.getProperty("user.home");
         File dir = new File(home, "doota");
-        File oldDir = new File(home, "ollama4j-ui");
         if (!dir.exists()) {
-            if (oldDir.exists() && oldDir.isDirectory()) {
-                oldDir.renameTo(dir);
-            } else {
-                dir.mkdirs();
-            }
+            dir.mkdirs();
         }
         return dir;
     }

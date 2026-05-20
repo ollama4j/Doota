@@ -54,8 +54,8 @@ body {
 }
 
 .app-logo-wrapper {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   background-color: #171a1d;
   display: flex;
@@ -69,10 +69,11 @@ body {
 }
 
 .app-logo {
-  width: 78%;
-  height: 78%;
+  width: 95%;
+  height: 95%;
   border-radius: 50%;
   object-fit: contain;
+  transform: translateY(6px);
 }
 
 .app-wordmark {

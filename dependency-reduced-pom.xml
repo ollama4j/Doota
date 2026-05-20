@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.ollama4j</groupId>
-  <artifactId>ollama4j-ui</artifactId>
+  <artifactId>doota</artifactId>
   <name>Doota</name>
-  <version>ollama4j-ui-revision</version>
+  <version>doota-revision</version>
   <description>Doota</description>
-  <url>https://github.com/ollama4j/ollama4j-ui</url>
+  <url>https://github.com/ollama4j/doota</url>
   <developers>
     <developer>
       <name>Amith Koujalgi</name>
@@ -18,14 +18,14 @@
   <licenses>
     <license>
       <name>MIT License</name>
-      <url>https://raw.githubusercontent.com/ollama4j/ollama4j-ui/main/LICENSE</url>
+      <url>https://raw.githubusercontent.com/ollama4j/doota/main/LICENSE</url>
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:git@github.com:ollama4j/ollama4j-ui.git</connection>
-    <developerConnection>scm:git:https://github.com/ollama4j/ollama4j-ui.git</developerConnection>
+    <connection>scm:git:git@github.com:ollama4j/doota.git</connection>
+    <developerConnection>scm:git:https://github.com/ollama4j/doota.git</developerConnection>
     <tag>1.0.0</tag>
-    <url>https://github.com/ollama4j/ollama4j-ui</url>
+    <url>https://github.com/ollama4j/doota</url>
   </scm>
   <build>
     <pluginManagement>
