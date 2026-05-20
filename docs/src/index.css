@@ -102,13 +102,15 @@ nav {
 }
 
 .nav-logo img {
-  width: 32px;
-  height: 32px;
+  width: 60px;
+  /* height: 32px; */
   display: block;
 }
 
 .nav-logo-text {
-  font-size: 20px;
+  transform: translate(-8px, -2px);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.02em;
 }

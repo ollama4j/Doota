@@ -4,7 +4,7 @@ const screenshots = [
   { id: 'chat', label: 'Chat', url: 'https://github.com/user-attachments/assets/46a6d913-79db-48b3-a1f8-753ffba9ae5c', title: 'Doota - Chat with Model Selection' },
   { id: 'agent', label: 'Agentic Loop', url: 'https://github.com/user-attachments/assets/f25381ba-1200-463d-8814-59710035be84', title: 'Doota - Autonomous Browser Reasoning' },
   { id: 'model-spec', label: 'Model Spec', url: 'https://github.com/user-attachments/assets/77a39875-4692-444c-a066-d3c590f667fd', title: 'Doota - Comprehensive Model Specifications' },
-  { id: 'hover-spec', label: 'Spec Details', url: 'https://github.com/user-attachments/assets/3d11553d-bacf-4b83-811e-faf8d55599b1', title: 'Doota - SPEC Hover Details' },
+  { id: 'hover-spec', label: 'Tool Call Details', url: 'https://github.com/user-attachments/assets/3d11553d-bacf-4b83-811e-faf8d55599b1', title: 'Doota - Tool Call Details' },
   { id: 'models', label: 'Model List', url: 'https://github.com/user-attachments/assets/328a3fdb-43a0-420d-b4c7-1c261863e2f8', title: 'Doota - Advanced Model Management' },
   { id: 'settings', label: 'Settings', url: 'https://github.com/user-attachments/assets/89802742-881f-4d35-a78d-d1c6caa00e94', title: 'Doota - Custom Connection Settings' },
   { id: 'diagnostics', label: 'Diagnostics', url: 'https://github.com/user-attachments/assets/236abf5b-d385-4382-9527-50c65f9cc9ed', title: 'Doota - Live System Diagnostics' },
