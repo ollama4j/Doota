@@ -310,7 +310,7 @@ export default function App() {
       <section style={{ paddingTop: '0px', paddingBottom: '80px' }}>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon orange">
+            <div className="feature-icon teal">
               🤖
             </div>
             <h3>Autonomous loops</h3>
@@ -350,7 +350,7 @@ export default function App() {
           </div>
 
           <div className="feature-card">
-            <div className="feature-icon orange">
+            <div className="feature-icon teal">
               💾
             </div>
             <h3>Local Chat Persistence</h3>
