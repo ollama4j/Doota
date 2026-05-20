@@ -17,3 +17,15 @@ kill:
 
 start: kill build
 	@java -jar target/*-runner.jar
+
+build-docs:
+	@echo "Building docs artifacts..."
+	cd docs && npm run build
+
+clean-docs:
+	@echo "Cleaning docs artifacts..."
+	rm -rf docs/dist
+
+docs-serve:
+	@echo "Starting docs development server..."
+	cd docs && npm run dev
