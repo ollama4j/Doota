@@ -31,3 +31,9 @@ docs-serve:
 	@echo "Starting docs development server..."
 	cd docs && [ -d node_modules ] || npm install
 	cd docs && npm run dev
+
+docker-build: 
+	@docker build -t doota .
+
+docker-start: docker-build
+	@docker run -p 8080:8080 doota
