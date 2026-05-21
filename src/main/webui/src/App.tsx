@@ -900,7 +900,9 @@ function App() {
           <div className="app-logo-wrapper">
             <img src="/logo.png" alt="Doota Logo" className="app-logo" />
           </div>
-          <div className="app-wordmark">Doota</div>
+          <div className="nav-logo-text">
+            <span>Doota</span>
+          </div>
         </div>
 
         <button

@@ -1,13 +1,15 @@
 :root {
-  --primary: #10a37f;
-  --primary-hover: #1a7f64;
-  --bg-color: #343541;
-  --sidebar-bg: #171a1d;
-  --text-color: #ececf1;
-  --user-msg-bg: #343541;
-  --assistant-msg-bg: #444654;
-  --input-bg: #40414f;
-  --border-color: #565869;
+  --primary: #10A37F;
+  --primary-hover: #2DD4BF;
+  --bg-color: #070A13;
+  --sidebar-bg: rgba(11, 14, 20, 0.85);
+  --text-color: #F8FAFC;
+  --text-muted: #94A3B8;
+  --user-msg-bg: #070A13;
+  --assistant-msg-bg: #0F1626;
+  --input-bg: #0F1626;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(16, 163, 127, 0.3);
 }
 
 @font-face {
@@ -25,6 +27,8 @@ body {
   color: var(--text-color);
   height: 100vh;
   overflow: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app-container {
@@ -38,11 +42,12 @@ body {
   width: 260px;
   flex-shrink: 0;
   background-color: var(--sidebar-bg);
+  backdrop-filter: blur(16px);
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border-right: 1px solid #171c1e;
+  border-right: 1px solid var(--border-color);
   box-sizing: border-box;
 }
 
@@ -83,24 +88,34 @@ body {
   transform: translateY(6px);
 }
 
-.app-wordmark {
+.nav-logo-text {
+  transform: translate(-8px, -2px);
   font-family: 'Chintaron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 25px;
   font-weight: normal;
   letter-spacing: -0.02em;
   opacity: 0.95;
   transition: opacity 0.3s ease;
+}
+
+.nav-logo-text span {
+  font-family: 'Chintaron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.nav-logo-text span:first-child {
   color: var(--text-color);
-  transform: translate(-8px, -2px);
-  color: #10A37F;
+}
+
+.nav-logo-text span:last-child {
+  color: var(--primary);
 }
 
 .logo-container:hover .app-logo-wrapper {
   border-color: var(--primary);
-  box-shadow: 0 4px 14px rgba(16, 163, 127, 0.4);
+  box-shadow: 0 4px 14px rgba(16, 163, 127, 0.4), 0 0 20px rgba(16, 163, 127, 0.25);
 }
 
-.logo-container:hover .app-wordmark {
+.logo-container:hover .nav-logo-text {
   opacity: 1;
 }
 
@@ -327,11 +342,11 @@ body {
   font-size: 1rem;
   outline: none;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .chat-input:focus {
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--primary);
+  box-shadow: 0 0 15px rgba(16, 163, 127, 0.2), 0 0 0 1px var(--primary);
   border-color: var(--primary);
 }
 
@@ -342,35 +357,40 @@ body {
   color: white;
   border: none;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(16, 163, 127, 0.25);
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+  filter: brightness(1.15);
+  box-shadow: 0 0 30px rgba(16, 163, 127, 0.35);
+  transform: translateY(-1px);
 }
 
 .send-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-color);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #565869;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8e8ea0;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Settings Styles */
@@ -420,19 +440,19 @@ body {
 
 .settings-back-btn {
   padding: 8px 16px;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #ececf1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 0.9rem;
+  font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .settings-back-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: white;
+  border-color: var(--border-hover);
+  color: var(--primary);
 }
 
 .settings-content-wrapper {
@@ -569,15 +589,19 @@ body {
   background-color: var(--primary);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   height: 46px;
+  box-shadow: 0 0 20px rgba(16, 163, 127, 0.25);
 }
 
 .save-button:hover {
-  background-color: #0d8567;
+  filter: brightness(1.15);
+  box-shadow: 0 0 30px rgba(16, 163, 127, 0.35);
+  transform: translateY(-1px);
 }
 
 .model-list {
@@ -597,9 +621,15 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.02);
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.2s;
+}
+
+.model-item:hover {
+  border-color: var(--border-hover);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .model-item span {
@@ -718,11 +748,11 @@ body {
   padding: 12px;
   background-color: transparent;
   color: var(--text-color);
-  border: 1px dashed rgba(255, 255, 255, 0.25);
-  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   width: 100%;
   text-align: left;
@@ -730,7 +760,8 @@ body {
 
 .new-chat-btn:hover {
   border-color: var(--primary);
-  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--primary);
+  background-color: rgba(16, 163, 127, 0.05);
 }
 
 .new-chat-btn:disabled {
@@ -778,17 +809,20 @@ body {
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   user-select: none;
+  border: 1px solid transparent;
 }
 
 .conversation-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-hover);
 }
 
 .conversation-item.active {
-  background-color: rgba(255, 255, 255, 0.1);
-  font-weight: 500;
+  background-color: rgba(16, 163, 127, 0.1);
+  border-color: rgba(16, 163, 127, 0.2);
+  font-weight: 600;
 }
 
 .conversation-item .chat-icon {
