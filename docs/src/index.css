@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Chintaron';
+  src: url('/ChintaronRegular-MAzen.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -109,10 +116,14 @@ nav {
 
 .nav-logo-text {
   transform: translate(-8px, -2px);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Chintaron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 25px;
-  font-weight: 800;
+  font-weight: normal;
   letter-spacing: -0.02em;
+}
+
+.nav-logo-text span {
+  font-family: 'Chintaron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .nav-logo-text span:first-child {

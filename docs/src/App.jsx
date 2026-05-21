@@ -107,10 +107,10 @@ export default function App() {
           Local Agentic Loop &amp; Beautiful UI for Ollama. Free forever.
         </div>
         <h1>
-          Run autonomous agents locally. <span className="accent">With complete visibility.</span>
+          Run autonomous Java agents locally <span className="accent">with complete visibility.</span>
         </h1>
         <p className="hero-sub">
-          Your local LLM agents run in loops, call system tools, compile code. Doota shows you exactly what they are doing in real-time, displaying execution state diagnostics, and tracking model specs on disk and memory.
+          Your local LLM agents run in loops, call system tools, execute code and more. Doota shows you exactly what they are doing in real-time, displaying execution state diagnostics, and tracking model specs on disk and memory.
         </p>
         <div className="hero-buttons">
           <a href="#get-started" className="btn-primary">Get Started Free</a>
