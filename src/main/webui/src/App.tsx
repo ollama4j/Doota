@@ -805,11 +805,11 @@ function App() {
         const snapshot = latestConvSnapshot as Conversation;
         const userMsgs = snapshot.messages.filter(m => m.role === 'user');
         const firstUserMsg = userMsgs[0];
-        
-        const isDefaultOrTempTitle = 
-          snapshot.title === 'New Chat' || 
+
+        const isDefaultOrTempTitle =
+          snapshot.title === 'New Chat' ||
           (firstUserMsg && (
-            snapshot.title === firstUserMsg.content || 
+            snapshot.title === firstUserMsg.content ||
             snapshot.title === (firstUserMsg.content.length > 35 ? firstUserMsg.content.substring(0, 35) + '...' : firstUserMsg.content)
           ));
 
@@ -900,7 +900,7 @@ function App() {
           <div className="app-logo-wrapper">
             <img src="/logo.png" alt="Doota Logo" className="app-logo" />
           </div>
-          <img src="/wordmark.png" alt="Doota Wordmark" className="app-wordmark" />
+          <div className="app-wordmark">Doota</div>
         </div>
 
         <button
