@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Astroid, User } from 'lucide-react';
 import './App.css';
 
 const MAX_AGENT_ITERATIONS = 10;
@@ -1178,7 +1178,7 @@ function App() {
                   <div key={i} className={`message-row ${msg.role}`}>
                     <div className="message-container">
                       <div className={`avatar ${msg.role}`}>
-                        {msg.role === 'user' ? '👤' : '🤖'}
+                        {msg.role === 'user' ? <User size={20} /> : <Astroid size={20} />}
                       </div>
                       <div className="message-content">
                         <div className={`message-bubble ${msg.role}`}>

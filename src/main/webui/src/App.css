@@ -241,8 +241,8 @@ body {
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
+  /* width: 36px; */
+  height: 24px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -253,12 +253,12 @@ body {
 }
 
 .avatar.user {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  /* background: linear-gradient(135deg, #6366f1, #4f46e5); */
   color: white;
 }
 
 .avatar.assistant {
-  background: linear-gradient(135deg, #10a37f, #0d8567);
+  /* background: linear-gradient(135deg, #10a37f, #0d8567); */
   color: white;
 }
 
@@ -343,7 +343,7 @@ body {
 }
 
 .chat-input-container {
-  padding: 10px 40px 20px;
+  padding: 10px 20px 20px;
   background: linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, var(--bg-color) 20%);
   display: flex;
   gap: 15px;
