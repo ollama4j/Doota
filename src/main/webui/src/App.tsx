@@ -1196,7 +1196,7 @@ function App() {
                         </div>
                         <div className="message-actions">
                           {msg.role === 'assistant' && msg.tps != null && (
-                            <span className="tps-indicator">
+                            <span className="tps-indicator" title="Average tokens generated per second">
                               ⚡ {msg.tps.toFixed(1)} tok/s
                             </span>
                           )}

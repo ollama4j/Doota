@@ -198,18 +198,37 @@ body {
 
 .message-row {
   display: flex;
-  padding: 24px 0;
+  padding: 5px 0;
   width: 100%;
 }
 
 .message-row.user {
   background-color: var(--user-msg-bg);
+  padding-top: 15px;
+}
+
+.message-row.user .message-container {
+  flex-direction: row-reverse;
+}
+
+.message-row.user .message-content {
+  align-items: flex-end;
+}
+
+.message-row.user .message-bubble {
+  /* background-color: rgba(255, 255, 255, 0.06); */
+  /* padding: 12px 18px; */
+  border-radius: 18px 18px 2px 18px;
+  max-width: 70%;
+  width: fit-content;
+  box-sizing: border-box;
 }
 
 .message-row.assistant {
-  background-color: var(--assistant-msg-bg);
+  /* background-color: var(--assistant-msg-bg); */
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 15px;
 }
 
 .message-container {
@@ -254,7 +273,7 @@ body {
 .message-bubble {
   width: 100%;
   line-height: 1.6;
-  font-size: 1.05rem;
+  font-size: 0.90rem;
   color: var(--text-color);
   /* padding-top: 4px; */
   min-width: 0;
@@ -324,7 +343,7 @@ body {
 }
 
 .chat-input-container {
-  padding: 20px 40px 40px;
+  padding: 10px 40px 20px;
   background: linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, var(--bg-color) 20%);
   display: flex;
   gap: 15px;
@@ -334,8 +353,8 @@ body {
 
 .chat-input {
   flex: 1;
-  padding: 16px 20px;
-  border-radius: 12px;
+  padding: 10px 20px;
+  border-radius: 25px;
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
   color: white;
@@ -396,7 +415,7 @@ body {
 /* Settings Styles */
 .settings-button {
   margin-top: auto;
-  padding: 12px;
+  padding: 5px;
   background-color: var(--input-bg);
   color: var(--text-color);
   border: 1px solid var(--border-color);
@@ -806,7 +825,10 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  /* padding: 10px 12px; */
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 5px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -828,6 +850,7 @@ body {
 .conversation-item .chat-icon {
   font-size: 1.1rem;
   color: #8e8ea0;
+  display: none;
 }
 
 .conversation-item.active .chat-icon {
@@ -836,18 +859,12 @@ body {
 
 .conversation-item .chat-title {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: #ececf1;
   transition: all 0.2s ease;
-}
-
-.conversation-item:hover .chat-title {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
 }
 
 .delete-chat-btn {
@@ -1116,12 +1133,13 @@ body {
 /* Tokens-Per-Second Indicator & Message Actions Styling */
 .message-actions {
   display: flex;
-  justify-content: flex-end;
+  /* justify-content: flex-end; */
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
   margin-top: 8px;
   width: 100%;
+  padding-bottom: 10px;
 }
 
 .tps-indicator {
@@ -1716,7 +1734,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 7px 7px;
+  padding: 5px 8px;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s ease;
@@ -1741,7 +1759,7 @@ body {
 
 .tool-call-accordion-title {
   flex: 1;
-  font-size: 0.92rem;
+  font-size: 0.90rem;
   font-weight: 600;
   letter-spacing: 0.1px;
 }
