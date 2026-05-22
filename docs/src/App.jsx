@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import logo from './assets/logo.png';
 
 const screenshots = [
   { id: 'chat', label: 'Chat', url: 'https://github.com/user-attachments/assets/46a6d913-79db-48b3-a1f8-753ffba9ae5c', title: 'Doota - Chat with Model Selection' },
@@ -75,7 +76,7 @@ export default function App() {
       <nav>
         <div className="nav-inner">
           <a href="#" className="nav-logo">
-            <img src="/logo.png" alt="Doota Logo" />
+            <img src={logo} alt="Doota Logo" />
             <div className="nav-logo-text">
               <span>Doota</span>
             </div>
