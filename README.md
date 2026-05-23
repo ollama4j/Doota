@@ -1,9 +1,5 @@
 <p align="center">
-  <img 
-    alt="doota-logo" 
-    src="https://github.com/user-attachments/assets/028def1f-7763-4d76-8569-463fe32e85c4" 
-    width="250"
-  />
+  <img width="250" alt="doota-logo"  src="https://github.com/user-attachments/assets/e32d88a6-dde5-4007-9018-a1535cba3b4d" />
 </p>
 
 <p align="center">
