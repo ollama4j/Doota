@@ -764,6 +764,38 @@ body {
   height: 16px;
 }
 
+/* GitHub Link Button */
+.github-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0px 12px 0px 12px;
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.github-link-btn:hover {
+  border-color: var(--primary);
+  /* color: var(--primary); */
+  /* background-color: rgba(16, 163, 127, 0.05); */
+}
+
+.github-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 /* Sidebar New Chat Button */
 .new-chat-btn {
   padding: 12px;
