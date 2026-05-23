@@ -360,7 +360,7 @@ body {
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
   color: white;
-  font-size: 1rem;
+  font-size: 0.85rem;
   outline: none;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
@@ -377,7 +377,7 @@ body {
   background-color: var(--primary);
   color: white;
   border: none;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -965,6 +965,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+  font-size: 0.85rem;
 }
 
 .chevron-icon {
