@@ -344,7 +344,7 @@ public class OllamaResource {
             if (req == null || req.model == null || req.firstMessage == null) {
                 return Response.status(Response.Status.BAD_REQUEST).entity(java.util.Map.of("error", "model and firstMessage required")).build();
             }
-            String prompt = "You are a helpful assistant. Generate a very concise and clear title (15 words maximum, without quotes, without conversational filler or colons) summarizing this user prompt: \"" + req.firstMessage + "\".";
+            String prompt = "You are a helpful assistant. Generate a very concise and clear title (15 words maximum, without quotes, without conversational filler or colons or starting and ending quote characters) summarizing this user prompt: \"" + req.firstMessage + "\".";
             
             io.github.ollama4j.models.generate.OllamaGenerateRequest request = io.github.ollama4j.models.generate.OllamaGenerateRequest.builder()
                 .withModel(req.model)

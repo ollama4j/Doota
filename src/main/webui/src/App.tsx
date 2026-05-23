@@ -5,6 +5,31 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Copy, Check, Astroid, User } from 'lucide-react';
 import './App.css';
 
+// ─── 404 Page ────────────────────────────────────────────────────────────────
+function NotFoundPage({ path }: { path: string }) {
+  const goHome = () => {
+    window.location.href = '/';
+  };
+  return (
+    <div className="not-found-page">
+      <div className="not-found-content">
+        <div className="not-found-glow" />
+        <div className="not-found-icon-wrap">
+          <img src="/logo.png" alt="Doota Logo" className="not-found-logo" />
+        </div>
+        <div className="not-found-code">404</div>
+        <h1 className="not-found-title">Page not found</h1>
+        <p className="not-found-desc">
+          The route <code className="not-found-path">{path}</code> doesn't exist.
+        </p>
+        <button className="not-found-btn" onClick={goHome}>
+          ← Back to Doota
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const MAX_AGENT_ITERATIONS = 10;
 
 interface ChatMessage {
@@ -367,6 +392,12 @@ function App() {
     setCurrentPath(path);
   };
 
+  // Determine if the current path is a known route or a true 404
+  const isKnownPath =
+    currentPath === '/' ||
+    currentPath === '/settings' ||
+    /^\/chat\/[0-9a-f-]+$/i.test(currentPath);
+
   useEffect(() => {
     if (!isConversationsLoaded) return;
 
@@ -401,7 +432,7 @@ function App() {
         setCurrentConversationId(uuid);
         saveConversationToServer(newConv);
       }
-    } else {
+    } else if (currentPath === '/') {
       if (conversationsRef.current.length > 0) {
         navigateTo(`/chat/${conversationsRef.current[0].id}`);
       } else {
@@ -409,6 +440,7 @@ function App() {
         navigateTo(`/chat/${newUuid}`);
       }
     }
+    // Unknown paths are handled by the NotFoundPage render below
   }, [currentPath, isConversationsLoaded]);
 
   useEffect(() => {
@@ -889,6 +921,11 @@ function App() {
       sendMessage();
     }
   };
+
+  // Render 404 for truly unknown paths
+  if (!isKnownPath) {
+    return <NotFoundPage path={currentPath} />;
+  }
 
   return (
     <div className="app-container">
