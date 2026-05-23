@@ -1647,18 +1647,25 @@ body {
   word-break: break-all;
 }
 
-/* ─── Agent status bar ───────────────────────────────────────────────────── */
-.agent-status-bar {
+/* ─── Agent status bar (inline inside bubble) ────────────────────────────── */
+.agent-status-inline {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 20px;
-  background: rgba(16, 163, 127, 0.06);
-  border-top: 1px solid rgba(16, 163, 127, 0.15);
-  border-bottom: 1px solid rgba(16, 163, 127, 0.08);
-  font-size: 0.85rem;
+  padding: 8px 12px;
+  /* background: rgba(16, 163, 127, 0.06); */
+  /* border: 1px solid rgba(16, 163, 127, 0.15); */
+  border-radius: 8px;
+  font-size: 0.82rem;
   color: #10a37f;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
   animation: fadeInSlide 0.2s ease-out;
+}
+
+.message-bubble.assistant > .agent-status-inline:first-child {
+  margin-top: 0;
 }
 
 @keyframes fadeInSlide {

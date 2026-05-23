@@ -637,7 +637,7 @@ function App() {
     try {
       for (let iteration = 0; iteration < MAX_AGENT_ITERATIONS; iteration++) {
         setAgentIteration(iteration + 1);
-        setAgentStatus(`Asking the model...`);
+        setAgentStatus(`Working...`);
 
         // Build message list for the API (exclude the trailing empty assistant bubble)
         const historyForApi = workingMessages
@@ -921,6 +921,15 @@ function App() {
       sendMessage();
     }
   };
+
+  const lastAssistantIndex = (() => {
+    for (let idx = messages.length - 1; idx >= 0; idx--) {
+      if (messages[idx].role === 'assistant') {
+        return idx;
+      }
+    }
+    return -1;
+  })();
 
   // Render 404 for truly unknown paths
   if (!isKnownPath) {
@@ -1224,6 +1233,7 @@ function App() {
             ) : (
               messages.map((msg, i) => {
                 if (msg.role === 'tool') return null;
+                const isCurrentAssistantLoading = isLoading && i === lastAssistantIndex;
                 return (
                   <div key={i} className={`message-row ${msg.role}`}>
                     <div className="message-container">
@@ -1241,6 +1251,18 @@ function App() {
                               {msg.tool_calls.map((tc, tcIndex) => (
                                 <ToolCallAccordionCard key={tcIndex} tc={tc} />
                               ))}
+                            </div>
+                          )}
+
+                          {isCurrentAssistantLoading && agentStatus && (
+                            <div className="agent-status-inline">
+                              <span className="agent-status-spinner">⟳</span>
+                              <span className="agent-status-text">{agentStatus}</span>
+                              {agentIteration > 0 && (
+                                <span className="agent-iteration-badge">
+                                  Iteration {agentIteration} / {MAX_AGENT_ITERATIONS}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1270,19 +1292,6 @@ function App() {
             )}
             <div ref={messagesEndRef} />
           </div>
-
-          {/* Agent status bar – visible while the loop is running */}
-          {isLoading && agentStatus && (
-            <div className="agent-status-bar">
-              <span className="agent-status-spinner">⟳</span>
-              <span className="agent-status-text">{agentStatus}</span>
-              {agentIteration > 0 && (
-                <span className="agent-iteration-badge">
-                  Iteration {agentIteration} / {MAX_AGENT_ITERATIONS}
-                </span>
-              )}
-            </div>
-          )}
 
           <div className="chat-input-container">
             <input
