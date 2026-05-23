@@ -133,7 +133,7 @@ public class OllamaService {
         byExtSpec.setName("find_files_by_extension");
         byExtSpec.setDescription(
             "Finds files on this computer that match a specific file extension (e.g. 'pdf', 'txt', 'png', 'mp4'). " +
-            "Use this when the user wants to search for files of a particular type or format.");
+            "Use this when the user wants to search for files of a particular type or format. If you don't have a directory specified, use the 'Get Home Directory' tool to first get the home directory and then continue to run this tool to find the files.");
 
         Map<String, Tools.Property> byExtProps = new LinkedHashMap<>();
         byExtProps.put("extension", Tools.Property.builder()
