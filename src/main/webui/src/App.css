@@ -1713,6 +1713,7 @@ body {
   color: #10a37f;
   white-space: nowrap;
   letter-spacing: 0.3px;
+  display: none;
 }
 
 /* ─── Auto-executed badge on tool call cards ─────────────────────────────── */
