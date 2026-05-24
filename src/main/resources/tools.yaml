@@ -1,0 +1,117 @@
+tools:
+  - name: find_files_by_name
+    displayName: "Find Files by Name"
+    description: >
+      Finds files on this computer whose filename contains the given name keyword
+      (case-insensitive substring match). Use this when the user wants to search
+      for files by their name or a partial name keyword.
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.FindFilesByNameToolFunction"
+    parameters:
+      - name: nameQuery
+        type: string
+        description: "The keyword or substring to search for within filenames. Required."
+        required: true
+      - name: searchDir
+        type: string
+        description: "The directory to search in. Optional. Defaults to the user's home directory."
+        required: false
+      - name: recursive
+        type: boolean
+        description: "Whether to search directories recursively. Optional. Defaults to true."
+        required: false
+
+  - name: find_files_by_extension
+    displayName: "Find Files by Extension"
+    description: >
+      Finds files on this computer that match a specific file extension (e.g. 'pdf', 'txt', 'png', 'mp4').
+      Use this when the user wants to search for files of a particular type or format.
+      If you don't have a directory specified, use the 'Get Home Directory' tool first.
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.FindFilesByExtensionToolFunction"
+    parameters:
+      - name: extension
+        type: string
+        description: "The file extension to search for, without the leading dot (e.g. 'pdf', 'txt', 'jpg'). Required."
+        required: true
+      - name: searchDir
+        type: string
+        description: "The directory to search in. Optional. Defaults to the user's home directory."
+        required: false
+      - name: recursive
+        type: boolean
+        description: "Whether to search directories recursively. Optional. Defaults to true."
+        required: false
+
+  - name: system_info
+    displayName: "System Info"
+    description: >
+      Retrieves system specifications of this computer: OS name/version, CPU cores,
+      JVM memory, disk drives with free/total space, username, and home directory.
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.SystemInfoToolFunction"
+    parameters: []
+
+  - name: platform_type
+    displayName: "Platform Type"
+    description: "Identifies the platform type of this computer: linux, mac, or windows."
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.PlatformTypeToolFunction"
+    parameters: []
+
+  - name: get_home_directory
+    displayName: "Get Home Directory"
+    description: "Retrieves the absolute path of the user's home directory on this computer."
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.GetHomeDirectoryToolFunction"
+    parameters: []
+
+  - name: calculator
+    displayName: "Calculator"
+    description: >
+      Evaluates a mathematical expression. Use this to perform math calculations
+      like addition, subtraction, multiplication, and division.
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.CalculatorTool"
+    parameters:
+      - name: operation
+        type: string
+        description: "The operation to perform (add, subtract, multiply, divide)"
+        required: true
+      - name: a
+        type: number
+        description: "First operand"
+        required: true
+      - name: b
+        type: number
+        description: "Second operand"
+        required: true
+
+  - name: get_current_datetime
+    displayName: "Date & Time"
+    description: "Gets the current system date and time."
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.DateTimeTool"
+    parameters: []
+
+  - name: get_weather
+    displayName: "Weather"
+    description: "Gets the current weather for a specified city or location."
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.WeatherTool"
+    parameters:
+      - name: location
+        type: string
+        description: "The city and state, e.g. San Francisco, CA"
+        required: true
+
+  - name: read_file
+    displayName: "Read File"
+    description: "Reads the contents of a local file at the specified absolute path."
+    enabled: true
+    functionClass: "io.github.ollama4j.api.tools.FileReadTool"
+    parameters:
+      - name: filePath
+        type: string
+        description: "The absolute file path to read"
+        required: true
